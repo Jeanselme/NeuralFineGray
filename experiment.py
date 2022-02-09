@@ -1,7 +1,7 @@
 from sksurv.metrics import integrated_brier_score
 from sklearn.model_selection import ParameterSampler
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
 import pandas as pd
 import numpy as np
 import pickle
@@ -128,20 +128,18 @@ class Experiment():
 
         self.risks = np.unique(e[e > 0])
         self.fold_assignment = pd.Series(0, index = range(len(x)))
-        kf = KFold(random_state = self.random_seed, shuffle = True)
+        kf = StratifiedKFold(random_state = self.random_seed, shuffle = True)
 
         # First initialization
         if self.best_nll is None:
             self.best_nll = {r: np.inf for r in self.risks} if (cause_specific and len(self.risks) > 1) else np.inf
-        for i, (train_index, test_index) in enumerate(kf.split(x)):
+        for i, (train_index, test_index) in enumerate(kf.split(x, e)):
             self.fold_assignment[test_index] = i
             if i < self.fold: continue # When reload: start last point
             print('Fold {}'.format(i))
-            
-            ten_percent = int(0.1 * len(train_index))
-            dev_index = train_index[:ten_percent]
-            val_index = train_index[ten_percent:2*ten_percent]
-            train_index = train_index[2*ten_percent:]
+
+            train_index, dev_index = train_test_split(train_index, test_size = 0.2, random_state = self.random_seed, stratify = e[train_index])
+            dev_index, val_index   = train_test_split(dev_index,   test_size = 0.5, random_state = self.random_seed, stratify = e[dev_index])
             
             x_train, x_dev, x_val = x[train_index], x[dev_index], x[val_index]
             t_train, t_dev, t_val = t[train_index], t[dev_index], t[val_index]
@@ -248,11 +246,10 @@ class DeepSurvExperiment(Experiment):
 
 class DeepHitExperiment(DeepSurvExperiment):
 
-    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter):  
-        from deephit.utils import LabTransform, CauseSpecificNet, tt
+    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter): 
+        from deephit.utils import CauseSpecificNet, tt, LabTransform
         from pycox.models import DeepHitSingle, DeepHit
 
-        self.labtrans = LabTransform([0] + self.times.tolist() + [t.max()])
         nodes = hyperparameter.pop('nodes', [100])
         shared = hyperparameter.pop('shared', [100])
         epochs = hyperparameter.pop('epochs', 1000)
@@ -262,10 +259,12 @@ class DeepHitExperiment(DeepSurvExperiment):
         callbacks = [tt.callbacks.EarlyStopping()]
         num_risks = len(np.unique(e))- 1
         if  num_risks > 1:
-            net = CauseSpecificNet(x.shape[1], nodes, shared, num_risks, self.labtrans.out_features, False)
+            self.labtrans = LabTransform([0] + self.times.tolist() + [t.max()])
+            net = CauseSpecificNet(x.shape[1], shared, nodes, num_risks, self.labtrans.out_features, False)
             model = DeepHit(net, tt.optim.Adam, duration_index = self.labtrans.cuts)
         else:
-            net = tt.practical.MLPVanilla(x.shape[1], nodes, self.labtrans.out_features, False)
+            self.labtrans = DeepHitSingle.label_transform([0] + self.times.tolist() + [t.max()])
+            net = tt.practical.MLPVanilla(x.shape[1], shared + nodes, self.labtrans.out_features, False)
             model = DeepHitSingle(net, tt.optim.Adam, duration_index = self.labtrans.cuts)
         model.optimizer.set_lr(lr)
         model.fit(x.astype('float32'), self.labtrans.transform(t, e), batch_size = batch, epochs = epochs, 

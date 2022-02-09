@@ -5,6 +5,8 @@ import sys
 from nfg import datasets
 from experiment import *
 
+random_seed = 0
+
 # Open dataset
 dataset = sys.argv[1] # FRAMINGHAM, SYNTHETIC_COMPETING, PBC
 print("Script running experiments on ", dataset)
@@ -21,17 +23,25 @@ layers_large = [[i] * (j + 1) for i in [50, 100] for j in range(6)]
 
 # Models
 ## Save data for R 
-kf = KFold(random_state = 0, shuffle = True)
+kf = StratifiedKFold(random_state = random_seed, shuffle = True)
 data = pd.DataFrame(x, columns = covariates)
-fold = pd.Series(0, index = data.index)
-for i, (train_index, test_index) in enumerate(kf.split(x)):
-    fold[test_index] = i
-data['Fold'] = fold
+for i, (train_index, test_index) in enumerate(kf.split(x, e)):
+    train_index, dev_index = train_test_split(train_index, test_size = 0.2, random_state = random_seed, stratify = e[train_index])
+    dev_index, val_index   = train_test_split(dev_index,   test_size = 0.5, random_state = random_seed, stratify = e[dev_index])
+
+    # Keep track of the whole indexing
+    fold = pd.Series(0, index = data.index)
+    fold[train_index] = "Train"
+    fold[dev_index] = "Dev"
+    fold[val_index] = "Val"
+    fold[test_index] = "Test"
+    data['Fold_{}'.format(i)] = fold
+
 data['Time'] = t
 data['Event'] = e
 data.to_csv('data/' + dataset + '.csv', index = False)
 
-# ## DSM One risk
+# DSM
 param_grid = {
     'epochs': [max_epochs],
     'learning_rate' : [1e-3, 1e-4],
@@ -41,22 +51,10 @@ param_grid = {
     'distribution' : ['LogNormal', 'Weibull'],
     'layers' : layers_large,
 }
-DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsm'.format(dataset), times = times).train(x, t, e)
-DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsmcs'.format(dataset), times = times).train(x, t, e, cause_specific = True)
+DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsm'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
+DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsmcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
 
-## DeepHit Competing risk
-param_grid = {
-    'epochs': [max_epochs],
-    'learning_rate' : [1e-3, 1e-4],
-    'batch': [100, 250],
-
-    'nodes' : layers,
-    'shared' : layers
-}
-DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dh'.format(dataset), times = times).train(x, t, e)
-DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dhcs'.format(dataset), times = times).train(x, t, e, cause_specific = True)
-
-## NFG Competing risk
+# NFG Competing risk
 param_grid = {
     'epochs': [max_epochs],
     'learning_rate' : [1e-3, 1e-4],
@@ -66,5 +64,17 @@ param_grid = {
     'layers' : layers,
     'act': ['Tanh'],
 }
-NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.format(dataset), times = times).train(x, t, e)
-NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), times = times).train(x, t, e, cause_specific = True)
+NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
+NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
+
+# DeepHit Competing risk
+param_grid = {
+    'epochs': [max_epochs],
+    'learning_rate' : [1e-3, 1e-4],
+    'batch': [100, 250],
+
+    'nodes' : layers,
+    'shared' : layers
+}
+DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dh'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
+DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dhcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)

@@ -14,21 +14,24 @@ for (i in 1:3) {
     # Open saved train file
     data = read_csv(paste0('data/', datasets[i], '.csv'))
     prediction = matrix(0, nrow = nrow(data), ncol = 2 * 3 + 1) # # outcomes * # Times
-    rownames(prediction) = as.numeric(rownames(data))
+    rownames(prediction) = as.numeric(rownames(data)) - 1
     colnames(prediction) = c(terms[i][[1]], terms[i][[1]], 'Use')
-    prediction[,-1] = data$Fold
 
     # Cross validation
     for (fold in 0:4) {
-        data_folder = subset(data, data$Fold != fold)
+        data_folder = subset(data, data[paste0("Fold_", fold)] == "Train")
         # Fit model
-        formula = reformulate(setdiff(colnames(data_folder), c("Time", "Event", "Fold")), response = "Hist(Time, Event)") 
+        formula = reformulate(setdiff(colnames(data_folder), c("Time", "Event", "Fold_0", "Fold_1", "Fold_2", "Fold_3", "Fold_4")), response = "Hist(Time, Event)") 
         
         for (outcome in 1:2) {
             model = FGR(formula, data = data_folder, cause = outcome)
             # Predict at the time horizons of interest
-            prediction[(data$Fold == fold),((outcome-1)*3+1):(outcome*3)] = 1 - predict(model, subset(data, data$Fold == fold), terms[i][[1]], cause = outcome)
+            test = (data[paste0("Fold_", fold)] == "Test")
+            prediction[test,((outcome-1)*3+1):(outcome*3)] = 1 - predict(model, subset(data, test), terms[i][[1]], cause = outcome)
         }
+        print(prediction)
+
+        prediction[(data[paste0("Fold_", fold)] == "Test"), 7] = fold
     }
     # Save
     write.csv(prediction, paste0('Results/', datasets[i], '_finegray.csv'))

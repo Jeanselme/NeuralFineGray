@@ -87,7 +87,9 @@ class NeuralFineGrayTorch(nn.Module):
 
     self.rep = create_representation(inputdim, layers + [inputdim], act, self.dropout) # Assign each point to a cluster
     self.balance = create_representation(inputdim, layers + [risks], act, self.dropout) # Define balance between outcome (ensure sum < 1)
-    self.outcome = create_representation_positive(inputdim + 1, layers_surv + [risks], act_surv, self.dropout) 
+    self.outcome = nn.ModuleList(
+                      [create_representation_positive(inputdim + 1, layers_surv + [1], act_surv, self.dropout) # Multihead (one for each outcome)
+                  for _ in range(risks)]) 
     
     self.soft = nn.Softmax(dim = 1)
     self.softlog = nn.LogSoftmax(dim = 1)
@@ -101,18 +103,18 @@ class NeuralFineGrayTorch(nn.Module):
     beta = self.soft(pre_beta).T
     betas_log = self.softlog(pre_beta).T
 
-    # Through positive neural network
-    tau_outcome = horizon.clone().detach().requires_grad_(gradient) # Copy with independent gradient
-    zeros = self.outcome(torch.cat((x_rep, torch.zeros_like(tau_outcome.unsqueeze(1))), 1)) # Outcome at time 0
-    out = self.outcome(torch.cat((x_rep, tau_outcome.unsqueeze(1)), 1)) # Outcome at time t
-    diff = (zeros - out)
-
     # Compute outcomes 
     integral, cifs, log_cifs = [], [], []
-    for risk in range(self.risks):
-      outcome_r = beta[risk] * (1 - torch.exp(diff[:, risk]))
+    for risk, outcome_competing in zip(range(self.risks), self.outcome):
+      # Through positive neural network
+      tau_outcome = horizon.clone().detach().requires_grad_(gradient) # Copy with independent gradient
+      zeros = outcome_competing(torch.cat((x_rep, torch.zeros_like(tau_outcome.unsqueeze(1))), 1)) # Outcome at time 0
+      out = outcome_competing(torch.cat((x_rep, tau_outcome.unsqueeze(1)), 1)) # Outcome at time t
+      diff = (zeros - out).squeeze()
+      
+      outcome_r = beta[risk] * (1 - torch.exp(diff))
       cifs.append(outcome_r.unsqueeze(-1))
-      log_cifs.append((betas_log[risk] + diff[:, risk]).unsqueeze(-1))
+      log_cifs.append((betas_log[risk] + diff).unsqueeze(-1))
       if gradient:
         integral.append(grad(outcome_r.mean(), tau_outcome, create_graph = True)[0].unsqueeze(1))
 

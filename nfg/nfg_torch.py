@@ -44,13 +44,13 @@ def create_representation_positive(inputdim, layers, activation, dropout = 0):
   
   prevdim = inputdim
   for hidden in layers:
-    modules.append(PositiveLinear(prevdim, hidden, bias=True))
+    modules.append(PositiveLinear(prevdim, hidden, bias = True))
     if dropout > 0:
       modules.append(nn.Dropout(p = dropout))
     modules.append(act)
     prevdim = hidden
 
-  # Need all values between 0 and 1 
+  # Need all values positive
   modules[-1] = nn.Softplus()
 
   return nn.Sequential(*modules)
@@ -67,7 +67,7 @@ def create_representation(inputdim, layers, activation, dropout = 0.5):
   prevdim = inputdim
 
   for hidden in layers:
-    modules.append(nn.Linear(prevdim, hidden, bias=True))
+    modules.append(nn.Linear(prevdim, hidden, bias = True))
     if dropout > 0:
       modules.append(nn.Dropout(p = dropout))
     modules.append(act)

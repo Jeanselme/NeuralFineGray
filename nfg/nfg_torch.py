@@ -86,9 +86,9 @@ class NeuralFineGrayTorch(nn.Module):
     self.optimizer = optimizer
 
     self.rep = create_representation(inputdim, layers + [inputdim], act, self.dropout) # Assign each point to a cluster
-    self.balance = create_representation(inputdim, layers + [risks], act, self.dropout) # Define balance between outcome (ensure sum < 1)
+    self.balance = create_representation(inputdim, layers + [risks], act) # Define balance between outcome (ensure sum < 1)
     self.outcome = nn.ModuleList(
-                      [create_representation_positive(inputdim + 1, layers_surv + [1], act_surv, self.dropout) # Multihead (one for each outcome)
+                      [create_representation_positive(inputdim + 1, layers_surv + [1], act_surv) # Multihead (one for each outcome)
                   for _ in range(risks)]) 
     
     self.soft = nn.Softmax(dim = 1)

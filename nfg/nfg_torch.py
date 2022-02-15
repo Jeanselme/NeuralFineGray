@@ -73,7 +73,7 @@ def create_representation(inputdim, layers, activation, dropout = 0.5):
     modules.append(act)
     prevdim = hidden
   
-  return nn.Sequential(*modules)
+  return modules
 
 class NeuralFineGrayTorch(nn.Module):
 
@@ -85,8 +85,8 @@ class NeuralFineGrayTorch(nn.Module):
     self.dropout = dropout
     self.optimizer = optimizer
 
-    self.rep = create_representation(inputdim, layers + [inputdim], act, self.dropout) # Assign each point to a cluster
-    self.balance = create_representation(inputdim, layers + [risks], act) # Define balance between outcome (ensure sum < 1)
+    self.rep = nn.Sequential(*create_representation(inputdim, layers + [inputdim], act, self.dropout)[:-1]) # Assign each point to a cluster
+    self.balance = nn.Sequential(*create_representation(inputdim, layers + [risks], act)) # Define balance between outcome (ensure sum < 1)
     self.outcome = nn.ModuleList(
                       [create_representation_positive(inputdim + 1, layers_surv + [1], act_surv) # Multihead (one for each outcome)
                   for _ in range(risks)]) 
@@ -95,8 +95,8 @@ class NeuralFineGrayTorch(nn.Module):
     self.softlog = nn.LogSoftmax(dim = 1)
 
   def forward(self, x, horizon, gradient = False):
-    # Extract representation
-    x_rep = self.rep(x)
+    # Skip connection
+    x_rep = nn.Tanh()(self.rep(x) + x)
 
     # Commpute balance
     pre_beta = self.balance(x_rep)

@@ -21,16 +21,14 @@ grid_search = 100
 layers = [[i] * (j + 1) for i in [50, 100] for j in range(3)]
 layers_large = [[i] * (j + 1) for i in [50, 100] for j in range(6)]
 
-# Models
+if dataset == 'PBC':
+    # Reduce dimensionality to avoid singular matrix
+    from sklearn.decomposition import PCA
+    x = PCA(15).fit_transform(x)
+
 ## Save data for R 
 kf = StratifiedKFold(random_state = random_seed, shuffle = True)
 data = pd.DataFrame(x).add_prefix('feature') # Do not save names to match R
-
-#### Remove perfectly correlated columns to avoid convergence issue in R
-corr_matrix = data.corr().abs()
-upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(np.bool))
-to_drop = [column for column in upper.columns if any(upper[column] == 1)]
-data.drop(to_drop, axis=1, inplace=True)
 
 for i, (train_index, test_index) in enumerate(kf.split(x, e)):
     train_index, dev_index = train_test_split(train_index, test_size = 0.2, random_state = random_seed, stratify = e[train_index])

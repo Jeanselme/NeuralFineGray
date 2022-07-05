@@ -5,12 +5,7 @@ from tqdm import tqdm
 from copy import deepcopy
 
 def get_optimizer(models, lr, optimizer, **kwargs):
-	if type(models) == list:
-		parameters = list()
-		for m in models:
-			parameters += list(m.parameters())
-	else:
-		parameters = list(models.parameters())
+	parameters = list(models.parameters())
 
 	if optimizer == 'Adam':
 		return torch.optim.Adam(parameters, lr=lr, **kwargs)

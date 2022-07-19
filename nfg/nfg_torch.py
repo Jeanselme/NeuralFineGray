@@ -111,9 +111,8 @@ class NeuralFineGrayTorch(nn.Module):
       diff = (zeros - out).squeeze() # Because of softplus it is between 0 and -inf
       # F = beta * (1 - torch.exp(diff)) --- Ensure 0 < F < 1 (zeros == out -> diff = 0 -> F = 0, out goes to inf -> diff goes - inf -> F = 1)
 
-      # Compute log survival log(1 - sum F) = log(1 - sum(beta (1 - exp[diff])))) = log(sum(beta * exp[diff] )) => **Use later log exp sum**
+      # Compute log survival log(1 - sum F) = log(1 - sum(beta (1 - exp[diff])))) = log(sum(beta * exp[diff])) => **Use later log sum exp**
       logS = log_beta[risk] + diff
-      logF.append(diff.unsqueeze(-1))
       logSs.append(logS.unsqueeze(-1))
 
       if gradient:
@@ -122,13 +121,12 @@ class NeuralFineGrayTorch(nn.Module):
         logbf = log_beta[risk] + diff + torch.log(ddiff.clamp_(1e-8))
         logbfs.append(logbf.unsqueeze(1))
 
-    logF = torch.cat(logF, -1)
     logSs = torch.cat(logSs, -1)
     logbfs = torch.cat(logbfs, -1) if gradient else None
     
-    return logSs, logbfs, logF  
+    return logSs, logbfs, log_beta
    
   def predict(self, x, horizon):
-    _, _, logF = self.forward(x, horizon)
-    return torch.exp(logF)
+    logSs, _, logBeta = self.forward(x, horizon)
+    return 1 - torch.exp(logBeta.T) + torch.exp(logSs)
 

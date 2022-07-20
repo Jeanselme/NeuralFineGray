@@ -3,7 +3,7 @@ from sklearn.preprocessing import StandardScaler
 from pycox import datasets
 import pandas as pd
 
-def load_dataset(dataset='SUPPORT', **kwargs):
+def load_dataset(dataset='SUPPORT', normalize = True, **kwargs):
     if dataset == 'GBSG':
         df = datasets.gbsg.read_df()
     elif dataset == 'METABRIC':
@@ -18,10 +18,10 @@ def load_dataset(dataset='SUPPORT', **kwargs):
         df = pd.read_csv('https://raw.githubusercontent.com/chl8856/DeepHit/master/sample%20data/SYNTHETIC/synthetic_comprisk.csv')
         df = df.drop(columns = ['true_time', 'true_label']).rename(columns = {'label': 'event', 'time': 'duration'})
     else:
-        return load_dsm(dataset, **kwargs)
+        return load_dsm(dataset, normalize = normalize, **kwargs)
 
     covariates = df.drop(['duration', 'event'], axis = 'columns')
-    return StandardScaler().fit_transform(covariates.values).astype(float),\
+    return StandardScaler().fit_transform(covariates.values).astype(float) if normalize else covariates.values.astype(float),\
            df['duration'].values.astype(float) + 1,\
            df['event'].values.astype(int),\
            covariates.columns

@@ -124,9 +124,9 @@ class NeuralFineGrayTorch(nn.Module):
     logSs = torch.cat(logSs, -1)
     logbfs = torch.cat(logbfs, -1) if gradient else None
     
-    return logSs, logbfs, log_beta
+    return logSs, logbfs, log_beta.T
    
   def predict(self, x, horizon):
     logSs, _, logBeta = self.forward(x, horizon)
-    return 1 - torch.exp(logBeta.T) + torch.exp(logSs)
+    return 1 - torch.exp(logBeta) + torch.exp(logSs)
 

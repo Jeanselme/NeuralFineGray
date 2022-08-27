@@ -104,7 +104,3 @@ class NeuralFineGrayTorch(nn.Module):
     intensity = torch.cat(int, -1).unsqueeze(-1) if gradient else None
 
     return cumulative, intensity
-   
-  def predict_survival(self, x, horizon):
-    cumulative, _ = self.forward(x, horizon)
-    return torch.exp(-cumulative)

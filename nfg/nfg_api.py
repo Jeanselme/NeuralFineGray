@@ -63,10 +63,10 @@ class NeuralFineGray(DSMBase):
         t_ = torch.DoubleTensor([t_] * len(x)).to(x.device)
         cumulative, _ = self.torch_model(x, t_)
         if risk is None:
-          outcomes = torch.exp(-cumulative.sum(1))
+          outcomes = torch.exp(- cumulative.sum(1))
           scores.append(outcomes.unsqueeze(1).detach().cpu().numpy())
         else:
-          outcomes = torch.exp(-cumulative)
+          outcomes = torch.exp(- cumulative)
           scores.append(outcomes[:, int(risk) - 1].unsqueeze(1).detach().cpu().numpy())
       return np.concatenate(scores, axis = 1)
     else:
@@ -86,7 +86,7 @@ class NeuralFineGray(DSMBase):
           ti = torch.DoubleTensor([ti] * len(x)).to(x.device)
           cumulative, intensity = self.torch_model(x, ti, gradient = True)
           survival = torch.exp(- cumulative.sum(dim = 1)).unsqueeze(1).repeat(1, self.torch_model.risks)
-          cif += intensity.squeeze() * survival
+          cif += intensity.squeeze() * survival * t_ / approx
         if risk is None:
           scores.append(cif.detach().cpu().numpy())
         else:

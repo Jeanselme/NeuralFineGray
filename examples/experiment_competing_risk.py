@@ -64,7 +64,7 @@ param_grid = {
 
     'layers_surv': layers,
     'layers' : layers,
-    'act': ['ReLU'],
+    'act': ['ReLU', 'Tanh'],
 }
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)

@@ -86,7 +86,7 @@ class NeuralFineGrayTorch(nn.Module):
     self.optimizer = optimizer
 
     self.embed = nn.Sequential(*create_representation(inputdim, layers + [inputdim], act, self.dropout)) # Assign each point to a cluster
-    self.outcome = create_representation_positive(inputdim + 1, layers_surv + [risks], 'Tanh') # Multihead (one for each outcome)
+    self.outcome = create_representation_positive(inputdim + 1, layers_surv + [risks], 'Tanh', self.dropout) # Multihead (one for each outcome)
     self.softlog = nn.LogSoftmax(dim = 1)
 
   def forward(self, x, horizon, gradient = False):

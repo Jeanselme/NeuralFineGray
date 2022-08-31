@@ -305,7 +305,7 @@ class NFGExperiment(DSMExperiment):
         return model
 
     def _predict_(self, model, x, times, r):
-        return pd.DataFrame(model.predict_cif(x, times.tolist(), r if model.torch_model.risks >= r else 1), columns = pd.MultiIndex.from_product([[r], times]))
+        return pd.DataFrame(model.predict_survival(x, times.tolist(), r if model.torch_model.risks >= r else 1), columns = pd.MultiIndex.from_product([[r], times]))
 
     def likelihood(self, x, t, e):
         t_norm = self.__preprocess__(t)

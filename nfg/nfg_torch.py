@@ -77,7 +77,7 @@ def create_representation(inputdim, layers, activation, dropout = 0.5):
 
 class NeuralFineGrayTorch(nn.Module):
 
-  def __init__(self, inputdim, layers = [100, 100, 100], act = 'ReLU6', layers_surv = [100], act_surv = 'Tanh',
+  def __init__(self, inputdim, layers = [100, 100, 100], act = 'ReLU', layers_surv = [100],
                risks = 1, dropout = 0., optimizer = "Adam"):
     super(NeuralFineGrayTorch, self).__init__()
     self.input_dim = inputdim
@@ -86,7 +86,7 @@ class NeuralFineGrayTorch(nn.Module):
     self.optimizer = optimizer
 
     self.embed = nn.Sequential(*create_representation(inputdim, layers + [inputdim], act, self.dropout)) # Assign each point to a cluster
-    self.outcome = create_representation_positive(inputdim + 1, layers_surv + [risks], act_surv) # Multihead (one for each outcome)
+    self.outcome = create_representation_positive(inputdim + 1, layers_surv + [risks], 'Tanh') # Multihead (one for each outcome)
     self.softlog = nn.LogSoftmax(dim = 1)
 
   def forward(self, x, horizon, gradient = False):

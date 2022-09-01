@@ -61,38 +61,15 @@ class NeuralFineGray(DSMBase):
       scores = []
       for t_ in t:
         t_ = torch.DoubleTensor([t_] * len(x)).to(x.device)
-        cumulative, _ = self.torch_model(x, t_)
+        F, _, log_beta = self.torch_model(x, t_)
         if risk is None:
-          outcomes = torch.exp(- cumulative.sum(1))
+          outcomes = 1 - torch.exp(F.sum(1)) # Compute overall survival
           scores.append(outcomes.unsqueeze(1).detach().cpu().numpy())
         else:
-          outcomes = torch.exp(- cumulative)
+          outcomes = 1 - torch.exp(log_beta.T) + torch.exp(F) # Exp diff => Ignore balance but just the risk of one disease
           scores.append(outcomes[:, int(risk) - 1].unsqueeze(1).detach().cpu().numpy())
       return np.concatenate(scores, axis = 1)
     else:
       raise Exception("The model has not been fitted yet. Please fit the " +
                       "model using the `fit` method on some training data " +
                       "before calling `predict_survival`.")
-
-  def predict_cif(self, x, t, risk = None, approx = 100):
-    x = self._preprocess_test_data(x)
-    if not isinstance(t, list):
-      t = [t]
-    if self.fitted:
-      scores = []
-      for t_ in t:
-        cif = torch.zeros(len(x), self.torch_model.risks).to(x.device)
-        for ti in np.linspace(0, t_, approx):
-          ti = torch.DoubleTensor([ti] * len(x)).to(x.device)
-          cumulative, intensity = self.torch_model(x, ti, gradient = True)
-          survival = torch.exp(- cumulative.sum(dim = 1)).unsqueeze(1).repeat(1, self.torch_model.risks)
-          cif += intensity.squeeze() * survival * t_ / approx
-        if risk is None:
-          scores.append(cif.detach().cpu().numpy())
-        else:
-          scores.append(cif[:, int(risk) - 1].unsqueeze(1).detach().cpu().numpy())
-      return np.concatenate(scores, axis = 1)
-    else:
-      raise Exception("The model has not been fitted yet. Please fit the " +
-                      "model using the `fit` method on some training data " +
-                      "before calling `predict_cif`.")

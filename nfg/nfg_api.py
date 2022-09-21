@@ -66,7 +66,7 @@ class NeuralFineGray(DSMBase):
           outcomes = torch.exp(log_X).sum(1) # Compute overall survival
           scores.append(outcomes.unsqueeze(1).detach().cpu().numpy())
         else:
-          outcomes = 1 - torch.exp(log_beta.T) + torch.exp(log_X) # Exp diff => Ignore balance but just the risk of one disease
+          outcomes = 1 - torch.exp(log_beta) + torch.exp(log_X) # Exp diff => Ignore balance but just the risk of one disease
           scores.append(outcomes[:, int(risk) - 1].unsqueeze(1).detach().cpu().numpy())
       return np.concatenate(scores, axis = 1)
     else:

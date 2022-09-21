@@ -86,7 +86,7 @@ class NeuralFineGrayTorch(nn.Module):
     self.optimizer = optimizer
 
     self.embed = nn.Sequential(*create_representation(inputdim, layers + [inputdim], act, self.dropout)) # Assign each point to a cluster
-    self.balance = nn.Sequential(*create_representation(inputdim, layers + [risks], act)) # Define balance between outcome (ensure sum < 1)
+    self.balance = nn.Sequential(*create_representation(inputdim, layers + [risks], act, self.dropout)) # Define balance between outcome (ensure sum < 1)
     self.outcome = nn.ModuleList(
                       [create_representation_positive(inputdim + 1, layers_surv + [1], 'Tanh') # Multihead (one for each outcome)
                   for _ in range(risks)]) 
@@ -94,7 +94,7 @@ class NeuralFineGrayTorch(nn.Module):
 
   def forward(self, x, horizon, gradient = False):
     x_rep = self.embed(x)
-    log_beta = self.softlog(self.balance(x_rep)).T # Balance
+    log_beta = self.softlog(self.balance(x)) # Balance
 
     # Compute cumulative hazard function
     log_X, ll_obs = [], []
@@ -102,11 +102,11 @@ class NeuralFineGrayTorch(nn.Module):
       tau_outcome = horizon.clone().detach().requires_grad_(gradient) # Copy with independent gradient
       outcome = outcome_competing(torch.cat((x_rep, tau_outcome.unsqueeze(1)), 1))
       N_r = (outcome_competing(torch.cat((x_rep, torch.zeros_like(tau_outcome.unsqueeze(1))), 1)) - outcome).squeeze()
-      log_X.append((log_beta[risk] + N_r).unsqueeze(1))
+      log_X.append((log_beta[:, risk] + N_r).unsqueeze(1))
 
       if gradient:
         derivative = grad(outcome.mean(), tau_outcome, create_graph = True)[0]
-        ll_obs.append((log_beta[risk] + N_r + torch.log(derivative.clamp_(1e-8))).unsqueeze(1))
+        ll_obs.append((log_beta[:, risk] + N_r + torch.log(derivative.clamp_(1e-8))).unsqueeze(1))
 
     log_X = torch.cat(log_X, -1)
     ll_obs = torch.cat(ll_obs, -1) if gradient else None

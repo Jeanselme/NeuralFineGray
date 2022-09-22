@@ -94,7 +94,7 @@ class NeuralFineGrayTorch(nn.Module):
 
   def forward(self, x, horizon, gradient = False):
     x_rep = self.embed(x)
-    log_beta = self.softlog(self.balance(x)) # Balance
+    log_beta = self.softlog(self.balance(x_rep)) # Balance
 
     # Compute cumulative hazard function
     log_X, ll_obs = [], []

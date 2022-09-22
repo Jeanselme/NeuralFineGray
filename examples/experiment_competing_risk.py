@@ -18,8 +18,8 @@ times = np.quantile(t[e!=0], horizons)
 
 max_epochs = 1000
 grid_search = 100
-layers = [[i] * (j + 1) for i in [50, 100] for j in range(3)]
-layers_large = [[i] * (j + 1) for i in [50, 100] for j in range(6)]
+layers = [[i] * (j + 1) for i in [25, 50] for j in range(3)]
+layers_large = [[i] * (j + 1) for i in [25, 50] for j in range(6)]
 
 ## Save data for R 
 kf = StratifiedKFold(random_state = random_seed, shuffle = True)

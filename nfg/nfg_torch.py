@@ -105,7 +105,7 @@ class NeuralFineGrayTorch(nn.Module):
       log_X.append((log_beta[:, risk] + N_r).unsqueeze(1))
 
       if gradient:
-        derivative = grad(outcome.mean(), tau_outcome, create_graph = True)[0]
+        derivative = grad(outcome.sum(), tau_outcome, create_graph = True)[0]
         ll_obs.append((log_beta[:, risk] + N_r + torch.log(derivative.clamp_(1e-8))).unsqueeze(1))
 
     log_X = torch.cat(log_X, -1)

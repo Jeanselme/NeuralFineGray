@@ -60,11 +60,9 @@ param_grid = {
     'learning_rate' : [1e-3, 1e-4],
     'batch': [100, 250],
 
-    'dropout': [0., 0.25, 0.5, 0.75],
-
     'layers_surv': layers,
     'layers' : layers,
-    'act': ['ReLU', 'Tanh'],
+    'act': ['Tanh'],
 }
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)

@@ -8,7 +8,7 @@ from experiment import *
 random_seed = 0
 
 # Open dataset
-dataset = sys.argv[1] # FRAMINGHAM, SYNTHETIC_COMPETING, PBC
+dataset = sys.argv[1] # FRAMINGHAM, SYNTHETIC_COMPETING, PBC, SEER
 print("Script running experiments on ", dataset)
 x, t, e, covariates = datasets.load_dataset(dataset, competing = True) 
 

@@ -1,3 +1,6 @@
 [submodule "DeepSurvivalMachines"]
 	path = DeepSurvivalMachines
 	url = git@github.com:Jeanselme/DeepSurvivalMachines.git
+[submodule "DeSurv"]
+	path = DeSurv
+	url = git@github.com:djdanks/DeSurv.git

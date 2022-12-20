@@ -15,6 +15,7 @@ class NeuralFineGray(DSMBase):
     self.cuda = cuda
 
   def _gen_torch_model(self, inputdim, optimizer, risks):
+    self.loss = losses.total_loss
     model = NeuralFineGrayTorch(inputdim, **self.params,
                                      risks = risks,
                                      optimizer = optimizer).double()
@@ -31,7 +32,7 @@ class NeuralFineGray(DSMBase):
 
     maxrisk = int(np.nanmax(e_train.cpu().numpy()))
     model = self._gen_torch_model(x_train.size(1), optimizer, risks = maxrisk)
-    model = train_nfg(model,
+    model = train_nfg(model, self.loss,
                          x_train, t_train, e_train,
                          x_val, t_val, e_val, cuda = self.cuda == 2,
                          **args)
@@ -50,7 +51,7 @@ class NeuralFineGray(DSMBase):
     if self.cuda == 2:
       x_val, t_val, e_val = x_val.cuda(), t_val.cuda(), e_val.cuda()
 
-    loss = losses.total_loss(self.torch_model, x_val, t_val, e_val)
+    loss = self.loss(self.torch_model, x_val, t_val, e_val)
     return loss.item()
 
   def predict_survival(self, x, t, risk = None):

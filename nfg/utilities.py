@@ -1,4 +1,3 @@
-from nfg.losses import total_loss
 import torch
 import numpy as np
 from tqdm import tqdm
@@ -16,7 +15,7 @@ def get_optimizer(models, lr, optimizer, **kwargs):
 	else:
 		raise NotImplementedError('Optimizer '+optimizer+' is not implemented')
 
-def train_nfg(model,
+def train_nfg(model, total_loss,
 			  x_train, t_train, e_train,
 			  x_valid, t_valid, e_valid,
 			  n_iter = 1000, lr = 1e-3, weight_decay = 0.001,

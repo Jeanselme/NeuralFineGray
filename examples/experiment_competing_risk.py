@@ -69,6 +69,10 @@ param_grid = {
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
 
+# DeSurv Competing risk
+DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
+DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dscs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
+
 # DeepHit Competing risk
 param_grid = {
     'epochs': [max_epochs],

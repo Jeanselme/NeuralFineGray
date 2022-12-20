@@ -310,3 +310,18 @@ class NFGExperiment(DSMExperiment):
     def likelihood(self, x, t, e):
         t_norm = self.__preprocess__(t)
         return super().likelihood(x, t_norm, e)
+
+class DeSurvExperiment(NFGExperiment):
+
+    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter):  
+        from desurv import DeSurv
+
+        epochs = hyperparameter.pop('epochs', 1000)
+        batch = hyperparameter.pop('batch', 250)
+        lr = hyperparameter.pop('learning_rate', 0.001)
+
+        model = DeSurv(**hyperparameter)
+        model.fit(x, t, e, n_iter = epochs, bs = batch,
+                lr = lr, val_data = (x_val, t_val, e_val))
+        
+        return model

@@ -19,7 +19,7 @@ def train_nfg(model, total_loss,
 			  x_train, t_train, e_train,
 			  x_valid, t_valid, e_valid,
 			  n_iter = 1000, lr = 1e-3, weight_decay = 0.001,
-			  bs = 100, cuda = False):
+			  bs = 100, patience_max = 3, cuda = False):
 	# Separate oprimizer as one might need more time to converge
 	optimizer = get_optimizer(model, lr, model.optimizer, weight_decay = weight_decay)
 	
@@ -70,7 +70,7 @@ def train_nfg(model, total_loss,
 				best_loss = valid_loss
 				best_param = deepcopy(model.state_dict())
 
-		elif patience == 3:
+		elif patience == patience_max:
 			break
 		else:
 			patience += 1

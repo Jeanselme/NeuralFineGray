@@ -1,6 +1,6 @@
 from sksurv.metrics import integrated_brier_score
 from sklearn.model_selection import ParameterSampler
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedKFold, train_test_split
 import pandas as pd
 import numpy as np
@@ -284,8 +284,8 @@ class NFGExperiment(DSMExperiment):
 
     def __preprocess__(self, t, save = False):
         if save:
-            self.normalizer = MinMaxScaler().fit(t.reshape(-1, 1))
-        return self.normalizer.transform(t.reshape(-1, 1)).flatten()
+            self.max_t = t.max()
+        return t / self.max_t
 
     def train(self, x, t, e, cause_specific = False):
         t_norm = self.__preprocess__(t, True)

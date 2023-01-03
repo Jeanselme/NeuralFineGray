@@ -18,8 +18,11 @@ times = np.quantile(t[e!=0], horizons)
 
 max_epochs = 1000
 grid_search = 100
-layers = [[i] * (j + 1) for i in [25, 50] for j in range(3)]
-layers_large = [[i] * (j + 1) for i in [25, 50] for j in range(6)]
+layers = [[i] * (j + 1) for i in [20, 50] for j in range(3)]
+layers_cs = [[i] * (j + 1) for i in [10, 25] for j in range(3)] # Divide by the number of risk, to ensure the same number of parameters for all risk
+
+layers_large = [[i] * (j + 1) for i in [20, 50] for j in range(6)]
+layers_large_cs = [[i] * (j + 1) for i in [10, 25] for j in range(6)]
 
 ## Save data for R 
 kf = StratifiedKFold(random_state = random_seed, shuffle = True)
@@ -52,9 +55,11 @@ param_grid = {
     'layers' : layers_large,
 }
 DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsm'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
+
+param_grid['layers'] = layers_large_cs
 DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsmcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
 
-# NFG Competing risk
+# NFG Competing risk and DeSurv
 param_grid = {
     'epochs': [max_epochs],
     'learning_rate' : [1e-3, 1e-4],
@@ -67,11 +72,13 @@ param_grid = {
     'act': ['Tanh'],
 }
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
-NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
-
-# DeSurv Competing risk
 DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
+
+param_grid['layers_surv'] = layers_cs
+param_grid['layers'] = layers_cs
+NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
 DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dscs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
+
 
 # DeepHit Competing risk
 param_grid = {
@@ -83,4 +90,7 @@ param_grid = {
     'shared' : layers
 }
 DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dh'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
+
+param_grid['nodes'] = layers_cs
+param_grid['shared'] = layers_cs
 DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dhcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)

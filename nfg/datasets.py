@@ -17,7 +17,7 @@ def load_dataset(dataset='SUPPORT', normalize = True, **kwargs):
         df = datasets.rr_nl_nhp.read_df()
         df = df.drop([c for c in df.columns if 'true' in c], axis = 'columns')
     elif dataset == 'SEER':
-        df = pd.read_csv('data/export.csv')
+        df = pd.read_csv('../data/export.csv')
         df = process_seer(df)
     elif dataset == 'SYNTHETIC_COMPETING':
         df = pd.read_csv('https://raw.githubusercontent.com/chl8856/DeepHit/master/sample%20data/SYNTHETIC/synthetic_comprisk.csv')
@@ -27,7 +27,7 @@ def load_dataset(dataset='SUPPORT', normalize = True, **kwargs):
 
     covariates = df.drop(['duration', 'event'], axis = 'columns')
     return StandardScaler().fit_transform(covariates.values).astype(float) if normalize else covariates.values.astype(float),\
-           df['duration'].values.astype(float) + 1,\
+           df['duration'].values.astype(float),\
            df['event'].values.astype(int),\
            covariates.columns
 

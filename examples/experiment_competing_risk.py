@@ -74,8 +74,7 @@ param_grid = {
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
 DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
 
-param_grid['layers_surv'] = layers_cs
-param_grid['layers'] = layers_cs
+param_grid['layers'] = layers_cs # Divide per 2 what is shared
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
 DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dscs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
 
@@ -91,6 +90,5 @@ param_grid = {
 }
 DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dh'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
 
-param_grid['nodes'] = layers_cs
 param_grid['shared'] = layers_cs
 DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dhcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)

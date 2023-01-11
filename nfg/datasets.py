@@ -51,6 +51,7 @@ def process_seer(df):
     df = df[~df.duration.isna()]
 
     # Outcome 
+    df['duration'] = df['duration'].astype(float)
     df['event'] = df["Vital status recode (study cutoff used)"] == 'Dead' # Death 
     df['event'].loc[(df["COD to site recode"] == "Diseases of Heart") & (df["SEER cause-specific death classification"] == "Alive or dead of other cause")] = 2 # CVD 
 

@@ -18,11 +18,11 @@ times = np.quantile(t[e!=0], horizons)
 
 max_epochs = 1000
 grid_search = 100
-layers = [[i] * (j + 1) for i in [20, 50] for j in range(3)]
-layers_cs = [[i] * (j + 1) for i in [10, 25] for j in range(3)] # Divide by the number of risk, to ensure the same number of parameters for all risk
+layers = [[i] * (j + 1) for i in [25, 50] for j in range(4)]
+layers_cs = [[i] * (j + 1) for i in [25, 50] for j in range(2)] # Divide by the number of risk, to ensure the same number of parameters for all risk
 
-layers_large = [[i] * (j + 1) for i in [20, 50] for j in range(6)]
-layers_large_cs = [[i] * (j + 1) for i in [10, 25] for j in range(6)]
+layers_large = [[i] * (j + 1) for i in [25, 50] for j in range(8)]
+layers_large_cs = [[i] * (j + 1) for i in [25, 50] for j in range(4)]
 
 ## Save data for R 
 kf = StratifiedKFold(random_state = random_seed, shuffle = True)

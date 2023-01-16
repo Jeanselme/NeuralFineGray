@@ -52,7 +52,7 @@ def process_seer(df):
 
     # Outcome 
     df['duration'] = df['duration'].astype(float)
-    df['event'] = df["Vital status recode (study cutoff used)"] == 'Dead' # Death 
+    df['event'] = df["SEER cause-specific death classification"] == "Dead (attributable to this cancer dx)" # Death 
     df['event'].loc[(df["COD to site recode"] == "Diseases of Heart") & (df["SEER cause-specific death classification"] == "Alive or dead of other cause")] = 2 # CVD 
 
     df = df.drop(columns = ["COD to site recode"])
@@ -63,15 +63,25 @@ def process_seer(df):
         "Diagnostic Confirmation", "Histology recode - broad groupings", "Chemotherapy recode (yes, no/unk)",
         "Radiation recode", "ER Status Recode Breast Cancer (1990+)", "PR Status Recode Breast Cancer (1990+)",
         "Histologic Type ICD-O-3", "ICD-O-3 Hist/behav, malignant", "Sequence number", "RX Summ--Surg Prim Site (1998+)",
-        "CS extension (2004-2015)", "CS lymph nodes (2004-2015)", "CS mets at dx (2004-2015)", "Year of diagnosis",
-        "Origin recode NHIA (Hispanic, Non-Hisp)"]
-    ordinal_col = ["Age recode with <1 year olds", "Grade"]
+        "CS extension (2004-2015)", "CS lymph nodes (2004-2015)", "CS mets at dx (2004-2015)", "Origin recode NHIA (Hispanic, Non-Hisp)"]
+    ordinal_col = ["Age recode with <1 year olds", "Grade", "Year of diagnosis"]
 
     imputer = SimpleImputer(strategy='most_frequent')
-    df_cat = pd.DataFrame(imputer.fit_transform(df[categorical_col + ordinal_col]), columns = categorical_col + ordinal_col, index = df.index)
+    df_cat = pd.DataFrame(imputer.fit_transform(df[categorical_col]), columns = categorical_col, index = df.index)
+    df_cat = pd.get_dummies(df_cat, drop_first = True, columns = categorical_col)
 
-    df_cat = pd.get_dummies(df_cat, drop_first = True, columns = categorical_col + ordinal_col)
-    
+    df_ord = pd.DataFrame(imputer.fit_transform(df[ordinal_col]), columns = ordinal_col, index = df.index)
+    df_ord = df_ord.replace(
+      {age: number
+        for number, age in enumerate(['01-04 years', '05-09 years', '10-14 years', '15-19 years', '20-24 years', '25-29 years',
+        '30-34 years', '35-39 years', '40-44 years', '45-49 years', '50-54 years', '55-59 years', 
+        '60-64 years', '65-69 years', '70-74 years', '75-79 years', '80-84 years', '85+ years'])
+      }).replace({
+        grade: number
+        for number, grade in enumerate(['Well differentiated; Grade I', 'Moderately differentiated; Grade II',
+       'Poorly differentiated; Grade III', 'Undifferentiated; anaplastic; Grade IV'])
+      })
+
     ## Numerical
     numerical_col = ["Total number of in situ/malignant tumors for patient", "Total number of benign/borderline tumors for patient",
           "CS tumor size (2004-2015)", "Regional nodes examined (1988+)", "Regional nodes positive (1988+)"]

@@ -1,5 +1,5 @@
 from dsm.datasets import load_dataset as load_dsm
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.impute import SimpleImputer
 from pycox import datasets
 import pandas as pd
@@ -67,9 +67,9 @@ def process_seer(df):
     ordinal_col = ["Age recode with <1 year olds", "Grade", "Year of diagnosis"]
 
     imputer = SimpleImputer(strategy='most_frequent')
-    df_cat = pd.DataFrame(imputer.fit_transform(df[categorical_col]), columns = categorical_col, index = df.index)
-    df_cat = pd.get_dummies(df_cat, drop_first = True, columns = categorical_col)
-
+    enc = OrdinalEncoder()
+    df_cat = pd.DataFrame(enc.fit_transform(imputer.fit_transform(df[categorical_col])), columns = categorical_col, index = df.index)
+    
     df_ord = pd.DataFrame(imputer.fit_transform(df[ordinal_col]), columns = ordinal_col, index = df.index)
     df_ord = df_ord.replace(
       {age: number

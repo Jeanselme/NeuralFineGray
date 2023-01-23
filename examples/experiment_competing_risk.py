@@ -24,6 +24,8 @@ layers_cs = [[i] * (j + 1) for i in [25, 50] for j in range(2)] # Divide by the 
 layers_large = [[i] * (j + 1) for i in [25, 50] for j in range(8)]
 layers_large_cs = [[i] * (j + 1) for i in [25, 50] for j in range(4)]
 
+batch = [100, 250] if dataset != 'SEER' else [1000, 5000]
+
 ## Save data for R 
 kf = StratifiedKFold(random_state = random_seed, shuffle = True)
 data = pd.DataFrame(x).add_prefix('feature') # Do not save names to match R
@@ -48,7 +50,7 @@ data.to_csv('data/' + dataset + '.csv', index = False)
 param_grid = {
     'epochs': [max_epochs],
     'learning_rate' : [1e-3, 1e-4],
-    'batch': [100, 250],
+    'batch': batch,
 
     'k' : [2, 3, 4, 5],
     'distribution' : ['LogNormal', 'Weibull'],
@@ -63,7 +65,7 @@ DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsmcs'
 param_grid = {
     'epochs': [max_epochs],
     'learning_rate' : [1e-3, 1e-4],
-    'batch': [100, 250],
+    'batch': batch,
     
     'dropout': [0., 0.25, 0.5, 0.75],
 
@@ -83,7 +85,7 @@ DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsc
 param_grid = {
     'epochs': [max_epochs],
     'learning_rate' : [1e-3, 1e-4],
-    'batch': [100, 250],
+    'batch': batch,
 
     'nodes' : layers,
     'shared' : layers

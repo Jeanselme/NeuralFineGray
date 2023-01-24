@@ -96,10 +96,7 @@ class Experiment():
         for i in self.best_model:
             index = self.fold_assignment[self.fold_assignment == i].index
             model = self.best_model[i]
-            if type(model) is dict:
-                pred = pd.concat([self._predict_(model[r], x[index], times, r) for r in self.risks], axis = 1)
-            else:
-                pred = pd.concat([self._predict_(model, x[index], times, r) for r in self.risks], axis = 1)
+            pred = pd.concat([self._predict_(model, x[index], times, r) for r in self.risks], axis = 1)
             predictions.loc[index] = pred.values
 
         if self.tosave:
@@ -132,7 +129,7 @@ class Experiment():
 
         # First initialization
         if self.best_nll is None:
-            self.best_nll = {r: np.inf for r in self.risks} if (cause_specific and len(self.risks) > 1) else np.inf
+            self.best_nll = np.inf
         for i, (train_index, test_index) in enumerate(kf.split(x, e)):
             self.fold_assignment[test_index] = i
             if i < self.fold: continue # When reload: start last point
@@ -152,21 +149,12 @@ class Experiment():
                 np.random.seed(self.random_seed)
                 torch.manual_seed(self.random_seed)
 
-                if cause_specific and len(self.risks) > 1:
-                    for r in self.risks:
-                        model = self._fit_(x_train, t_train, e_train == r, x_val, t_val, e_val == r, hyper.copy())
-                        nll = self._nll_(model, x_dev, t_dev, e_dev == r, e_train == r, t_train)
-                        if nll < self.best_nll[r]:
-                            self.best_hyper[i][r] = hyper
-                            self.best_model[i][r] = model
-                            self.best_nll[r] = nll
-                else:
-                    model = self._fit_(x_train, t_train, e_train, x_val, t_val, e_val, hyper.copy())
-                    nll = self._nll_(model, x_dev, t_dev, e_dev, e_train, t_train)
-                    if nll < self.best_nll:
-                        self.best_hyper[i] = hyper
-                        self.best_model[i] = model
-                        self.best_nll = nll
+                model = self._fit_(x_train, t_train, e_train, x_val, t_val, e_val, hyper.copy(), cause_specific = cause_specific)
+                nll = self._nll_(model, x_dev, t_dev, e_dev, e_train, t_train)
+                if nll < self.best_nll:
+                    self.best_hyper[i] = hyper
+                    self.best_model[i] = model
+                    self.best_nll = nll
 
                 self.iter = j + 1
                 Experiment.save(self)
@@ -198,7 +186,7 @@ class Experiment():
 
 class DSMExperiment(Experiment):
 
-    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter):  
+    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter, cause_specific):  
         from dsm import DeepSurvivalMachines
 
         epochs = hyperparameter.pop('epochs', 1000)
@@ -219,7 +207,7 @@ class DSMExperiment(Experiment):
 
 class DeepSurvExperiment(Experiment):
 
-    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter):  
+    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter, cause_specific):  
         from pycox.models import CoxPH
         import torchtuples as tt
 
@@ -246,7 +234,7 @@ class DeepSurvExperiment(Experiment):
 
 class DeepHitExperiment(DeepSurvExperiment):
 
-    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter): 
+    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter, cause_specific): 
         from deephit.utils import CauseSpecificNet, tt, LabTransform
         from pycox.models import DeepHitSingle, DeepHit
 
@@ -291,14 +279,14 @@ class NFGExperiment(DSMExperiment):
         t_norm = self.__preprocess__(t, True)
         return super().train(x, t_norm, e, cause_specific)
 
-    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter):  
+    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter, cause_specific):  
         from nfg import NeuralFineGray
 
         epochs = hyperparameter.pop('epochs', 1000)
         batch = hyperparameter.pop('batch', 250)
         lr = hyperparameter.pop('learning_rate', 0.001)
 
-        model = NeuralFineGray(**hyperparameter)
+        model = NeuralFineGray(**hyperparameter, cause_specific = cause_specific)
         model.fit(x, t, e, n_iter = epochs, bs = batch,
                 lr = lr, val_data = (x_val, t_val, e_val))
         
@@ -313,7 +301,7 @@ class NFGExperiment(DSMExperiment):
 
 class DeSurvExperiment(NFGExperiment):
 
-    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter):  
+    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter, cause_specific):  
         from desurv import DeSurv
 
         epochs = hyperparameter.pop('epochs', 1000)

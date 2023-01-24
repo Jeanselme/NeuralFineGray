@@ -97,18 +97,18 @@ class NeuralFineGrayTorch(nn.Module):
     log_beta = self.softlog(self.balance(x_rep)) # Balance
 
     # Compute cumulative hazard function
-    log_X, ll_obs = [], []
+    sr, hr = [], []
     for risk, outcome_competing in zip(range(self.risks), self.outcome):
       tau_outcome = horizon.clone().detach().requires_grad_(gradient) # Copy with independent gradient
       outcome = outcome_competing(torch.cat((x_rep, tau_outcome.unsqueeze(1)), 1))
       N_r = (outcome_competing(torch.cat((x_rep, torch.zeros_like(tau_outcome.unsqueeze(1))), 1)) - outcome).squeeze()
-      log_X.append((log_beta[:, risk] + N_r).unsqueeze(1))
+      sr.append(N_r.unsqueeze(1))
 
       if gradient:
         derivative = grad(outcome.sum(), tau_outcome, create_graph = True)[0]
-        ll_obs.append((log_beta[:, risk] + N_r + torch.log(derivative + 1e-10)).unsqueeze(1)) # Check if better like this ?
+        hr.append(torch.log(derivative + 1e-10).unsqueeze(1))
 
-    log_X = torch.cat(log_X, -1)
-    ll_obs = torch.cat(ll_obs, -1) if gradient else None
+    sr = torch.cat(sr, -1)
+    hr = torch.cat(hr, -1) if gradient else None
 
-    return log_X, ll_obs, log_beta
+    return sr, hr, log_beta

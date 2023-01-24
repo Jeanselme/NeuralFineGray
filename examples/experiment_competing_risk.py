@@ -19,10 +19,7 @@ times = np.quantile(t[e!=0], horizons)
 max_epochs = 1000
 grid_search = 100
 layers = [[i] * (j + 1) for i in [25, 50] for j in range(4)]
-layers_cs = [[i] * (j + 1) for i in [25, 50] for j in range(2)] # Divide by the number of risk, to ensure the same number of parameters for all risk
-
 layers_large = [[i] * (j + 1) for i in [25, 50] for j in range(8)]
-layers_large_cs = [[i] * (j + 1) for i in [25, 50] for j in range(4)]
 
 batch = [100, 250] if dataset != 'SEER' else [1000, 5000]
 
@@ -58,9 +55,6 @@ param_grid = {
 }
 DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsm'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
 
-param_grid['layers'] = layers_large_cs
-DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsmcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
-
 # NFG Competing risk and DeSurv
 param_grid = {
     'epochs': [max_epochs],
@@ -74,12 +68,8 @@ param_grid = {
     'act': ['Tanh'],
 }
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
-DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
-
-param_grid['layers'] = layers_cs # Divide per 2 what is shared
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
-DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dscs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
-
+DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
 
 # DeepHit Competing risk
 param_grid = {
@@ -91,6 +81,3 @@ param_grid = {
     'shared' : layers
 }
 DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dh'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
-
-param_grid['shared'] = layers_cs
-DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dhcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)

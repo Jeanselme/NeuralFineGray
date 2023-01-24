@@ -159,7 +159,7 @@ class Experiment():
                 self.iter = j + 1
                 Experiment.save(self)
             self.fold, self.iter = i + 1, 0
-            self.best_nll = {r: np.inf for r in self.risks} if (cause_specific and len(self.risks) > 1) else np.inf
+            self.best_nll = np.inf
             Experiment.save(self)
         return self.save_results(x, t, e, self.times)
 

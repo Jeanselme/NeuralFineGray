@@ -63,8 +63,9 @@ class NeuralFineGray(DSMBase):
       scores = []
       for t_ in t:
         t_ = torch.DoubleTensor([t_] * len(x)).to(x.device)
-        log_sr, _, _  = self.torch_model(x, t_)
-        outcomes = 1 + torch.exp(log_sr) # Exp diff => Ignore balance but just the risk of one disease
+        log_sr, _, log_beta  = self.torch_model(x, t_)
+        beta = 1 if self.cause_specific else log_beta.exp() 
+        outcomes = 1 - beta * (1 - torch.exp(log_sr)) # Exp diff => Ignore balance but just the risk of one disease
         scores.append(outcomes[:, int(risk) - 1].unsqueeze(1).detach().cpu().numpy())
       return np.concatenate(scores, axis = 1)
     else:

@@ -61,29 +61,27 @@ class Experiment():
                 try:
                     return cls.load(path+ '.pickle')
                 except Exception as e:
+                    raise(e)
                     print('ERROR: Reinitalizing object')
                     os.remove(path + '.pickle')
                     pass
                 
         return cls(hyper_grid, n_iter, random_seed, times, path, save)
 
-    @staticmethod
-    def load(path):
+    @classmethod
+    def load(cls, path):
         file = open(path, 'rb')
         if torch.cuda.is_available():
             return pickle.load(file)
         else:
             se = CPU_Unpickler(file).load()
-            for model in se.best_model:
-                if type(se.best_model[model]) is dict:
-                    for m in se.best_model[model]:
-                        se.best_model[model][m].cuda = False
-                else:
-                    se.best_model[model].cuda = False
+            for i in se.best_model:
+                if not isinstance(se.best_model[i], dict):
+                    se.best_model[i].cuda = False
             return se
 
-    @staticmethod
-    def save(obj):
+    @classmethod
+    def save(cls, obj):
         with open(obj.path + '.pickle', 'wb') as output:
             try:
                 pickle.dump(obj, output)
@@ -157,10 +155,10 @@ class Experiment():
                     self.best_nll = nll
 
                 self.iter = j + 1
-                Experiment.save(self)
+                self.save(self)
             self.fold, self.iter = i + 1, 0
             self.best_nll = np.inf
-            Experiment.save(self)
+            self.save(self)
         return self.save_results(x, t, e, self.times)
 
     def _fit_(self, *params):
@@ -233,6 +231,57 @@ class DeepSurvExperiment(Experiment):
 
 
 class DeepHitExperiment(DeepSurvExperiment):
+    """
+        This class require a slightly more involved saving scheme to avoid a lambda error with pickle
+        The models are removed at each save and reloaded before saving results 
+    """
+
+    @classmethod
+    def load(cls, path):
+        from pycox.models import DeepHitSingle, DeepHit
+        file = open(path, 'rb')
+        if torch.cuda.is_available():
+            exp = pickle.load(file)
+            for i in exp.best_model:
+                net, cuts = exp.best_model[i]
+                exp.best_model[i] = DeepHit(net, duration_index = cuts) if len(exp.risks) > 2 \
+                                else DeepHitSingle(net, duration_index = cuts)
+            return exp
+        else:
+            se = CPU_Unpickler(file).load()
+            for i in se.best_model:
+                path = se.best_model[i]
+                if isinstance(path, str):
+                    net, cuts = se.best_model[i]
+                    se.best_model[i] = DeepHit(net, duration_index = cuts) if len(se.risks) > 2 \
+                                    else DeepHitSingle(net, duration_index = cuts)
+                    se.best_model[i].cuda = False
+            return se
+
+    @classmethod
+    def save(cls, obj):
+        from pycox.models import DeepHitSingle, DeepHit
+        with open(obj.path + '.pickle', 'wb') as output:
+            try:
+                for i in obj.best_model:
+                    # Split model and save components (error pickle otherwise)
+                    if isinstance(obj.best_model[i], DeepHit) or isinstance(obj.best_model[i], DeepHitSingle):
+                        obj.best_model[i] = (obj.best_model[i].net, obj.best_model[i].duration_index)
+                pickle.dump(obj, output)
+            except Exception as e:
+                print('Unable to save object')
+
+    def save_results(self, x, t, e, times):
+        from pycox.models import DeepHitSingle, DeepHit
+
+        # Reload models in memory
+        for i in self.best_model:
+            if isinstance(self.best_model[i], tuple):
+                # Reload model
+                net, cuts = self.best_model[i]
+                self.best_model[i] = DeepHit(net, duration_index = cuts) if len(self.risks) > 2 \
+                                else DeepHitSingle(net, duration_index = cuts)
+        return super().save_results(x, t, e , times)
 
     def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter, cause_specific): 
         from deephit.utils import CauseSpecificNet, tt, LabTransform

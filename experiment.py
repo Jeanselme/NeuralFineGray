@@ -61,7 +61,6 @@ class Experiment():
                 try:
                     return cls.load(path+ '.pickle')
                 except Exception as e:
-                    raise(e)
                     print('ERROR: Reinitalizing object')
                     os.remove(path + '.pickle')
                     pass

@@ -1,3 +1,5 @@
+# This script runs Fine Gray on all datasets
+
 library(riskRegression)
 library(prodlim)
 library(survival)

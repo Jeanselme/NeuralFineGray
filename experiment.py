@@ -242,17 +242,19 @@ class DeepHitExperiment(DeepSurvExperiment):
         if torch.cuda.is_available():
             exp = pickle.load(file)
             for i in exp.best_model:
-                net, cuts = exp.best_model[i]
-                exp.best_model[i] = DeepHit(net, duration_index = cuts) if len(exp.risks) > 2 \
-                                else DeepHitSingle(net, duration_index = cuts)
+                if isinstance(exp.best_model[i], tuple):
+                    net, cuts = exp.best_model[i]
+                    exp.best_model[i] = DeepHit(net, duration_index = cuts) if len(exp.risks) > 2 \
+                                    else DeepHitSingle(net, duration_index = cuts)
             return exp
         else:
             se = CPU_Unpickler(file).load()
             for i in se.best_model:
-                net, cuts = se.best_model[i]
-                se.best_model[i] = DeepHit(net, duration_index = cuts) if len(se.risks) > 2 \
-                                else DeepHitSingle(net, duration_index = cuts)
-                se.best_model[i].cuda = False
+                if isinstance(se.best_model[i], tuple):
+                    net, cuts = se.best_model[i]
+                    se.best_model[i] = DeepHit(net, duration_index = cuts) if len(se.risks) > 2 \
+                                    else DeepHitSingle(net, duration_index = cuts)
+                    se.best_model[i].cuda = False
             return se
 
     @classmethod

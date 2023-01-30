@@ -249,12 +249,10 @@ class DeepHitExperiment(DeepSurvExperiment):
         else:
             se = CPU_Unpickler(file).load()
             for i in se.best_model:
-                path = se.best_model[i]
-                if isinstance(path, str):
-                    net, cuts = se.best_model[i]
-                    se.best_model[i] = DeepHit(net, duration_index = cuts) if len(se.risks) > 2 \
-                                    else DeepHitSingle(net, duration_index = cuts)
-                    se.best_model[i].cuda = False
+                net, cuts = se.best_model[i]
+                se.best_model[i] = DeepHit(net, duration_index = cuts) if len(se.risks) > 2 \
+                                else DeepHitSingle(net, duration_index = cuts)
+                se.best_model[i].cuda = False
             return se
 
     @classmethod

@@ -55,7 +55,7 @@ def create_representation_positive(inputdim, layers, activation, dropout = 0):
 
   return nn.Sequential(*modules)
 
-def create_representation(inputdim, layers, activation, dropout = 0.5):
+def create_representation(inputdim, layers, activation, dropout = 0.5, last = None):
   if activation == 'ReLU6':
     act = nn.ReLU6()
   elif activation == 'ReLU':
@@ -72,6 +72,9 @@ def create_representation(inputdim, layers, activation, dropout = 0.5):
       modules.append(nn.Dropout(p = dropout))
     modules.append(act)
     prevdim = hidden
+
+  if not(last is None):
+    modules[-1] = last
   
   return modules
 

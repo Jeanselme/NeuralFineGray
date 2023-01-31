@@ -14,8 +14,9 @@ def total_loss(model, x, t, e, eps = 1e-8):
   for k in range(model.risks):
     ids = e_order == (k + 1)
     dudt = model.odenet.dudt(torch.cat((t_order[ids].unsqueeze(1), x_order[ids, :]), 1))
+
     error -= (torch.log(1 - ode[ids][:, k]**2 + eps) 
-              + torch.log(dudt[:, k] + eps) 
-              + torch.log(xrep[ids][:, k] + eps)).sum()
+            + torch.log(dudt[:, k] + eps) 
+            + torch.log(xrep[ids][:, k] + eps)).sum()
 
   return error / len(x)

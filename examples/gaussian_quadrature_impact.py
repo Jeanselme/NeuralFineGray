@@ -16,18 +16,14 @@ x, t, e, covariates = datasets.load_dataset(dataset, competing = True)
 horizons = [0.25, 0.5, 0.75]
 times = np.quantile(t[e!=0], horizons)
 
-max_epochs = 10
-grid_search = 3
-layers = [[i] * (j + 1) for i in [25, 50] for j in range(4)]
-layers_large = [[i] * (j + 1) for i in [25, 50] for j in range(8)]
-
-batch = [5000]
+max_epochs = 1000
+grid_search = 1
 
 # DeSurv
 param_grid = {
     'epochs': [max_epochs],
     'learning_rate' : [1e-4],
-    'batch': batch,
+    'batch': [5000],
     
     'dropout': [0.],
 

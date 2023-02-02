@@ -51,6 +51,9 @@ NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.f
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), times = times, random_seed = random_seed).train(x, t, e, cause_specific = True)
 DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
 
+param_grid['multihead'] = [False]
+NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg_onehead'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
+
 # DeepHit Competing risk
 param_grid = {
     'epochs': [max_epochs],

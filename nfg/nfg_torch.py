@@ -55,7 +55,7 @@ def create_representation_positive(inputdim, layers, activation, dropout = 0):
 
   return nn.Sequential(*modules)
 
-def create_representation(inputdim, layers, activation, dropout = 0.5, last = None):
+def create_representation(inputdim, layers, activation, dropout = 0., last = None):
   if activation == 'ReLU6':
     act = nn.ReLU6()
   elif activation == 'ReLU':
@@ -81,7 +81,7 @@ def create_representation(inputdim, layers, activation, dropout = 0.5, last = No
 class NeuralFineGrayTorch(nn.Module):
 
   def __init__(self, inputdim, layers = [100, 100, 100], act = 'ReLU', layers_surv = [100],
-               risks = 1, dropout = 0., optimizer = "Adam"):
+               risks = 1, dropout = 0., optimizer = "Adam", multihead = True):
     super(NeuralFineGrayTorch, self).__init__()
     self.input_dim = inputdim
     self.risks = risks  # Competing risks
@@ -92,16 +92,19 @@ class NeuralFineGrayTorch(nn.Module):
     self.balance = nn.Sequential(*create_representation(inputdim, layers + [risks], act, self.dropout)) # Define balance between outcome (ensure sum < 1)
     self.outcome = nn.ModuleList(
                       [create_representation_positive(inputdim + 1, layers_surv + [1], 'Tanh') # Multihead (one for each outcome)
-                  for _ in range(risks)]) 
+                  for _ in range(risks)]) if multihead \
+                  else create_representation_positive(inputdim + 1, layers_surv + [risks], 'Tanh')
     self.softlog = nn.LogSoftmax(dim = 1)
 
-  def forward(self, x, horizon, gradient = False):
+    self.forward = self.forward_multihead if multihead else self.forward_single
+
+  def forward_multihead(self, x, horizon, gradient = False):
     x_rep = self.embed(x)
     log_beta = self.softlog(self.balance(x_rep)) # Balance
 
     # Compute cumulative hazard function
     sr, hr = [], []
-    for risk, outcome_competing in zip(range(self.risks), self.outcome):
+    for outcome_competing in self.outcome:
       tau_outcome = horizon.clone().detach().requires_grad_(gradient) # Copy with independent gradient
       outcome = outcome_competing(torch.cat((x_rep, tau_outcome.unsqueeze(1)), 1))
       N_r = (outcome_competing(torch.cat((x_rep, torch.zeros_like(tau_outcome.unsqueeze(1))), 1)) - outcome).squeeze()
@@ -111,7 +114,25 @@ class NeuralFineGrayTorch(nn.Module):
         derivative = grad(outcome.sum(), tau_outcome, create_graph = True)[0]
         hr.append(torch.log(derivative + 1e-10).unsqueeze(1))
 
+    hr = torch.cat(hr, -1) if gradient else None
     sr = torch.cat(sr, -1)
+
+    return sr, hr, log_beta
+
+  def forward_single(self, x, horizon, gradient = False):
+    x_rep = self.embed(x)
+    log_beta = self.softlog(self.balance(x_rep)) # Balance
+
+    # Compute cumulative hazard function 
+    tau_outcome = horizon.clone().detach().requires_grad_(gradient) # Copy with independent gradient
+    outcome = self.outcome(torch.cat((x_rep, tau_outcome.unsqueeze(1)), 1))
+    sr = (self.outcome(torch.cat((x_rep, torch.zeros_like(tau_outcome.unsqueeze(1))), 1)) - outcome).squeeze()
+
+    if gradient:
+      hr = []
+      for r in range(self.risks):
+        derivative = grad(outcome[:, r].sum(), tau_outcome, create_graph = True)[0]
+        hr.append(torch.log(derivative + 1e-10).unsqueeze(1))
     hr = torch.cat(hr, -1) if gradient else None
 
     return sr, hr, log_beta

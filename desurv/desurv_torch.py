@@ -41,7 +41,7 @@ class DeSurvTorch(nn.Module):
 
     self.balance = nn.Sequential(*create_representation(inputdim, layers + [risks], act, self.dropout, last = nn.Softmax(dim = 1))) # Balance between risks
     self.embed = nn.Sequential(*create_representation(inputdim, layers + [inputdim], act, self.dropout)) # Embed data before survival
-    self.odenet = CondODENet(inputdim, layers_surv, risks, "ReLU", n = n)
+    self.odenet = CondODENet(inputdim, layers_surv, risks, act, n = n)
 
   def forward(self, x, horizon):
     embed = self.embed(x)

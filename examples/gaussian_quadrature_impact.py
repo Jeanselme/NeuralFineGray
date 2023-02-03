@@ -25,14 +25,16 @@ param_grid = {
     'learning_rate' : [1e-4],
     'batch': [5000],
     
-    'dropout': [0.],
+    'dropout': [0.25],
 
-    'layers_surv': [[50] * 3],
-    'layers' : [[50] * 3],
+    'layers_surv': [[50] * 4],
+    'layers' : [[50] * 4],
     'act': ['Tanh'],
 }
-NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_fg_fixed'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
-for n in range(2, 10000, 100):
+for n in [2, 3, 100, 1000, 10000]:
     param_grid['n'] = [n]
     DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds_n={}'.format(dataset, n), times = times, random_seed = random_seed).train(x, t, e)
 
+NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg_fixed'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
+param_grid['multihead'] = [False]
+NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg_onehead_fixed'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)

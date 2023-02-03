@@ -32,7 +32,7 @@ param_grid = {
     'act': ['Tanh'],
 }
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_fg_fixed'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
-for n in range(2, 100, 2):
+for n in range(2, 10000, 100):
     param_grid['n'] = [n]
     DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds_n={}'.format(dataset, n), times = times, random_seed = random_seed).train(x, t, e)
 

@@ -10,6 +10,9 @@ dataset = sys.argv[1] # FRAMINGHAM, SYNTHETIC_COMPETING, PBC, SEER
 print("Script running experiments on ", dataset)
 x, t, e, covariates = datasets.load_dataset(dataset, competing = True, drop_first = True) 
 
+if dataset == "SEER":
+    x = np.delete(x, 8, 1) # Non invertible otherwise
+
 ## Save data for R 
 kf = StratifiedKFold(random_state = random_seed, shuffle = True)
 data = pd.DataFrame(x).add_prefix('feature') # Do not save names to match R

@@ -89,7 +89,7 @@ class NeuralFineGrayTorch(nn.Module):
     self.optimizer = optimizer
 
     self.embed = nn.Sequential(*create_representation(inputdim, layers + [inputdim], act, self.dropout)) # Assign each point to a cluster
-    self.balance = nn.Sequential(*create_representation(inputdim, layers + [risks], act, self.dropout)) # Define balance between outcome (ensure sum < 1)
+    self.balance = nn.Sequential(*create_representation(inputdim, layers + [risks], act)) # Define balance between outcome (ensure sum < 1)
     self.outcome = nn.ModuleList(
                       [create_representation_positive(inputdim + 1, layers_surv + [1], 'Tanh') # Multihead (one for each outcome)
                   for _ in range(risks)]) if multihead \

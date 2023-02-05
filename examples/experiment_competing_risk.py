@@ -33,7 +33,7 @@ param_grid = {
     'distribution' : ['LogNormal', 'Weibull'],
     'layers' : layers_large,
 }
-#DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsm'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
+DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsm'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
 
 # NFG Competing risk and DeSurv
 param_grid = {

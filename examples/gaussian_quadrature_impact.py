@@ -22,13 +22,13 @@ grid_search = 1
 # DeSurv
 param_grid = {
     'epochs': [max_epochs],
-    'learning_rate' : [1e-4],
+    'learning_rate' : [1e-3],
     'batch': [5000],
     
-    'dropout': [0.25],
+    'dropout': [0.],
 
-    'layers_surv': [[50] * 4],
-    'layers' : [[50] * 4],
+    'layers_surv': [[50] * 3],
+    'layers' : [[50] * 3],
     'act': ['Tanh'],
 }
 for n in [2, 3, 100, 1000]:

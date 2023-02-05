@@ -31,7 +31,7 @@ param_grid = {
     'layers' : [[50] * 4],
     'act': ['Tanh'],
 }
-for n in [2, 3, 100, 1000, 10000]:
+for n in [2, 3, 100, 1000]:
     param_grid['n'] = [n]
     DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds_n={}'.format(dataset, n), times = times, random_seed = random_seed).train(x, t, e)
 

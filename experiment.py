@@ -244,7 +244,7 @@ class DeepHitExperiment(DeepSurvExperiment):
             for i in exp.best_model:
                 if isinstance(exp.best_model[i], tuple):
                     net, cuts = exp.best_model[i]
-                    exp.best_model[i] = DeepHit(net, duration_index = cuts) if len(exp.risks) > 2 \
+                    exp.best_model[i] = DeepHit(net, duration_index = cuts) if len(exp.risks) > 1 \
                                     else DeepHitSingle(net, duration_index = cuts)
             return exp
         else:
@@ -252,7 +252,7 @@ class DeepHitExperiment(DeepSurvExperiment):
             for i in se.best_model:
                 if isinstance(se.best_model[i], tuple):
                     net, cuts = se.best_model[i]
-                    se.best_model[i] = DeepHit(net, duration_index = cuts) if len(se.risks) > 2 \
+                    se.best_model[i] = DeepHit(net, duration_index = cuts) if len(se.risks) > 1 \
                                     else DeepHitSingle(net, duration_index = cuts)
                     se.best_model[i].cuda = False
             return se
@@ -278,7 +278,7 @@ class DeepHitExperiment(DeepSurvExperiment):
             if isinstance(self.best_model[i], tuple):
                 # Reload model
                 net, cuts = self.best_model[i]
-                self.best_model[i] = DeepHit(net, duration_index = cuts) if len(self.risks) > 2 \
+                self.best_model[i] = DeepHit(net, duration_index = cuts) if len(self.risks) > 1 \
                                 else DeepHitSingle(net, duration_index = cuts)
         return super().save_results(x, t, e , times)
 

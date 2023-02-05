@@ -35,6 +35,7 @@ for n in [2, 3, 100, 1000]:
     param_grid['n'] = [n]
     DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds_n={}'.format(dataset, n), times = times, random_seed = random_seed).train(x, t, e)
 
+del param_grid['n']
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg_fixed'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
 param_grid['multihead'] = [False]
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg_onehead_fixed'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)

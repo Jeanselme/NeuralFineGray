@@ -41,7 +41,7 @@ param_grid = {
     'learning_rate' : [1e-3, 1e-4],
     'batch': batch,
     
-    'dropout': [0., 0.25, 0.5],
+    'dropout': [0., 0.25, 0.5, 0.75],
 
     'layers_surv': layers,
     'layers' : layers,

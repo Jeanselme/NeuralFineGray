@@ -106,13 +106,12 @@ class NeuralFineGrayTorch(nn.Module):
     sr, hr = [], []
     for outcome_competing in self.outcome:
       tau_outcome = horizon.clone().detach().requires_grad_(gradient) # Copy with independent gradient
-      outcome = outcome_competing(torch.cat((x_rep, tau_outcome.unsqueeze(1)), 1))
-      N_r = (outcome_competing(torch.cat((x_rep, torch.zeros_like(tau_outcome.unsqueeze(1))), 1)) - outcome).squeeze()
-      sr.append(N_r.unsqueeze(1))
+      outcome = tau_outcome.unsqueeze(1) * outcome_competing(torch.cat((x_rep, tau_outcome.unsqueeze(1)), 1))
+      sr.append(- outcome)
 
       if gradient:
         derivative = grad(outcome.sum(), tau_outcome, create_graph = True)[0]
-        hr.append(torch.log(derivative + 1e-10).unsqueeze(1))
+        hr.append(torch.log(derivative.clamp_(1e-10)).unsqueeze(1))
 
     hr = torch.cat(hr, -1) if gradient else None
     sr = torch.cat(sr, -1)
@@ -125,14 +124,13 @@ class NeuralFineGrayTorch(nn.Module):
 
     # Compute cumulative hazard function 
     tau_outcome = horizon.clone().detach().requires_grad_(gradient) # Copy with independent gradient
-    outcome = self.outcome(torch.cat((x_rep, tau_outcome.unsqueeze(1)), 1))
-    sr = (self.outcome(torch.cat((x_rep, torch.zeros_like(tau_outcome.unsqueeze(1))), 1)) - outcome).squeeze()
+    outcome = tau_outcome.unsqueeze(1) * self.outcome(torch.cat((x_rep, tau_outcome.unsqueeze(1)), 1))
 
     if gradient:
       hr = []
       for r in range(self.risks):
         derivative = grad(outcome[:, r].sum(), tau_outcome, create_graph = True)[0]
-        hr.append(torch.log(derivative + 1e-10).unsqueeze(1))
+        hr.append(torch.log(derivative.clamp_(1e-10)).unsqueeze(1))
     hr = torch.cat(hr, -1) if gradient else None
 
-    return sr, hr, log_beta
+    return -outcome, hr, log_beta

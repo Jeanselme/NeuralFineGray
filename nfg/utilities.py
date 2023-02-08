@@ -78,4 +78,4 @@ def train_nfg(model, total_loss,
 		previous_loss = valid_loss
 
 	model.load_state_dict(best_param)
-	return model
+	return model, i

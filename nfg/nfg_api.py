@@ -33,11 +33,12 @@ class NeuralFineGray(DSMBase):
 
     maxrisk = int(np.nanmax(e_train.cpu().numpy()))
     model = self._gen_torch_model(x_train.size(1), optimizer, risks = maxrisk)
-    model = train_nfg(model, self.loss,
+    model, speed = train_nfg(model, self.loss,
                          x_train, t_train, e_train,
                          x_val, t_val, e_val, cuda = self.cuda == 2,
                          **args)
 
+    self.speed = speed # Number of iterations needed to converge
     self.torch_model = model.eval()
     self.fitted = True
     return self    

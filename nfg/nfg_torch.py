@@ -6,7 +6,7 @@ import torch
 # All of this as dependence
 class PositiveLinear(nn.Module):
   def __init__(self, in_features, out_features, bias = False):
-    super(PositiveLinear, self).__init__()
+    super().__init__()
     self.in_features = in_features
     self.out_features = out_features
     self.log_weight = nn.Parameter(torch.Tensor(out_features, in_features))
@@ -82,7 +82,7 @@ class NeuralFineGrayTorch(nn.Module):
 
   def __init__(self, inputdim, layers = [100, 100, 100], act = 'ReLU', layers_surv = [100],
                risks = 1, dropout = 0., optimizer = "Adam", multihead = True):
-    super(NeuralFineGrayTorch, self).__init__()
+    super().__init__()
     self.input_dim = inputdim
     self.risks = risks  # Competing risks
     self.dropout = dropout

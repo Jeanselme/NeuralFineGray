@@ -12,6 +12,8 @@ dataset = sys.argv[1] # FRAMINGHAM, SYNTHETIC_COMPETING, PBC, SEER
 print("Script running experiments on ", dataset)
 x, t, e, covariates = datasets.load_dataset(dataset, competing = True) 
 
+print(np.linalg.matrix_rank(x), np.linalg.matrix_rank(np.concatenate([x, t.reshape((-1, 1))], axis = 1)))
+
 # Hyperparameters and evaluations
 horizons = [0.25, 0.5, 0.75]
 times = np.quantile(t[e!=0], horizons)
@@ -23,19 +25,18 @@ grid_search = 1
 param_grid = {
     'epochs': [max_epochs],
     'learning_rate' : [1e-3],
-    'batch': [5000],
-    
-    'dropout': [0.],
-
-    'layers_surv': [[50] * 3],
-    'layers' : [[50] * 3],
-    'act': ['Tanh'],
+    'batch': [250],
+    'layers' : [[50, 50, 50]],
+    'act': ['ReLU'],
 }
-for n in [2, 3, 100, 1000]:
+for n in [1, 2, 3, 100, 1000]:
     param_grid['n'] = [n]
     DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds_n={}'.format(dataset, n), times = times, random_seed = random_seed).train(x, t, e)
 
 del param_grid['n']
+param_grid['layers'] = [[50, 50]]
+param_grid['layers_surv'] = [[50]]
+
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg_fixed'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
 param_grid['multihead'] = [False]
-NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg_onehead_fixed'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
+NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg_oneheadfixed'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)

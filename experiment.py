@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import torch
+import time
 import os
 import io
 
@@ -35,25 +36,28 @@ class ToyExperiment():
 
 class Experiment():
 
-    def __init__(self, hyper_grid = None, n_iter = 100, 
+    def __init__(self, hyper_grid = None, n_iter = 100, fold = None,
                 random_seed = 0, times = [0.25, 0.5, 0.75], path = 'results', save = True):
         self.hyper_grid = list(ParameterSampler(hyper_grid, n_iter = n_iter, random_state = random_seed) if hyper_grid is not None else [{}])
         self.random_seed = random_seed
         self.times = times
         
         # Allows to reload a previous model
-        self.iter, self.fold = 0, 0
-        self.best_hyper = {i: {} for i in range(5)}
-        self.best_model = {i: {} for i in range(5)}
+        self.all_fold = fold
+        self.iter, self.fold = 0, 0 
+        self.best_hyper = {}
+        self.best_model = {}
         self.best_nll = None
 
         self.path = path
         self.tosave = save
+        self.running_time = 0
 
     @classmethod
-    def create(cls, hyper_grid = None, n_iter = 100, 
+    def create(cls, hyper_grid = None, n_iter = 100, fold = None,
                 random_seed = 0, times = [0.25, 0.5, 0.75], path = 'results', force = False, save = True):
         if not(force):
+            path = path if fold is None else path + '_{}'.format(fold)
             if os.path.isfile(path + '.csv'):
                 return ToyExperiment()
             elif os.path.isfile(path + '.pickle'):
@@ -65,7 +69,7 @@ class Experiment():
                     os.remove(path + '.pickle')
                     pass
                 
-        return cls(hyper_grid, n_iter, random_seed, times, path, save)
+        return cls(hyper_grid, n_iter, fold, random_seed, times, path, save)
 
     @classmethod
     def load(cls, path):
@@ -78,6 +82,19 @@ class Experiment():
                 if not isinstance(se.best_model[i], dict):
                     se.best_model[i].cuda = False
             return se
+
+    @classmethod
+    def merge(cls, hyper_grid = None, n_iter = 100, fold = None,
+            random_seed = 0, times = [0.25, 0.5, 0.75], path = 'results', force = False, save = True):
+        merged = cls(hyper_grid, n_iter, fold, random_seed, times, path, save)
+        for i in range(5):
+            path_i = path + '_{}.pickle'.format(i)
+            if os.path.isfile(path_i):
+                merged.best_model[i] = cls.load(path_i).best_model[i]
+            else:
+                print('Fold {} has not been computed yet'.format(i))
+        merged.fold = 5 # Nothing to run
+        return merged
 
     @classmethod
     def save(cls, obj):
@@ -130,6 +147,8 @@ class Experiment():
         for i, (train_index, test_index) in enumerate(kf.split(x, e)):
             self.fold_assignment[test_index] = i
             if i < self.fold: continue # When reload: start last point
+            if not(self.all_fold is None) and (self.all_fold != i): continue
+            start_time = time.process_time()
             print('Fold {}'.format(i))
 
             train_index, dev_index = train_test_split(train_index, test_size = 0.2, random_state = self.random_seed, stratify = e[train_index])
@@ -157,8 +176,11 @@ class Experiment():
                 self.save(self)
             self.fold, self.iter = i + 1, 0
             self.best_nll = np.inf
+            self.running_time += time.process_time() - start_time
             self.save(self)
-        return self.save_results(x, t, e, self.times)
+
+        if self.all_fold is None:
+            return self.save_results(x, t, e, self.times)
 
     def _fit_(self, *params):
         raise NotImplementedError()

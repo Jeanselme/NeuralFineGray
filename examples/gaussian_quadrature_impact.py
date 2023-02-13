@@ -27,16 +27,9 @@ param_grid = {
     'learning_rate' : [1e-3],
     'batch': [250],
     'layers' : [[50, 50, 50]],
+    'layers_surv' : [[50, 50, 50]],
     'act': ['ReLU'],
 }
-for n in [1, 2, 3, 100, 1000]:
+for n in [1, 15, 100, 1000]:
     param_grid['n'] = [n]
     DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds_n={}'.format(dataset, n), times = times, random_seed = random_seed).train(x, t, e)
-
-del param_grid['n']
-param_grid['layers'] = [[50, 50]]
-param_grid['layers_surv'] = [[50]]
-
-NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg_fixed'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)
-param_grid['multihead'] = [False]
-NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg_oneheadfixed'.format(dataset), times = times, random_seed = random_seed).train(x, t, e)

@@ -15,16 +15,17 @@ model = NeuralFineGray()
 model.fit(x, t, e)
 model.predict_risk(x, risk = 1)
 ```
+With `x`, the covariates, `t`, the event times and `e`, the cause of end of follow up (0 is censoring).
 
 A full example with analysis is provided in `examples/Neural Fine Gray on FRAMINGHAM Dataset.ipynb`.
 ## Reproduce paper's results
 To reproduce the paper's results:
 
 0. Clone the repository with dependencies: `git clone git@github.com:Jeanselme/NeuralFineGray.git --recursive`
-1. Create a conda environment with all necessary libraries `pycox`, `lifelines`, `pysurvival`.
+1. Create a conda environment with all necessary libraries `pycox`, `lifelines`, `pysurvival`
 2. Add path `export PYTHONPATH="$PWD:$PWD/DeepSurvivalMachines:$PYTHONPATH"`
 3. Run `examples/experiment_competing_risk.py FRAMINGHAM`
-4. Repeat with `PBC` and `SYNTHETIC_COMPETING`
+4. Repeat with `PBC`, `SYNTHETIC_COMPETING` and `SEER`
 5. Analysis using `examples/Analysis.ipynb`
 
 ## Compare to a new method

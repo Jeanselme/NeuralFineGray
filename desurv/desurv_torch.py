@@ -32,11 +32,10 @@ class CondODENet(nn.Module):
 class DeSurvTorch(nn.Module):
 
   def __init__(self, inputdim, layers = [100, 100, 100], act = 'ReLU', layers_surv = [100],
-               risks = 1, dropout = 0., optimizer = "Adam", n = 15):
+               risks = 1, optimizer = "Adam", n = 15):
     super().__init__()
     self.input_dim = inputdim
     self.risks = risks  # Competing risks
-    self.dropout = dropout
     self.optimizer = optimizer
 
     self.balance = nn.Sequential(*create_representation(inputdim, layers + [risks], act, last = nn.Softmax(dim = 1))) # Balance between risks

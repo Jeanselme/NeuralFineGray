@@ -317,11 +317,11 @@ class DeepHitExperiment(DeepSurvExperiment):
         callbacks = [tt.callbacks.EarlyStopping()]
         num_risks = len(np.unique(e))- 1
         if  num_risks > 1:
-            self.labtrans = LabTransform([0] + self.times.tolist() + [t.max()])
+            self.labtrans = LabTransform(100)
             net = CauseSpecificNet(x.shape[1], shared, nodes, num_risks, self.labtrans.out_features, False)
             model = DeepHit(net, tt.optim.Adam, duration_index = self.labtrans.cuts)
         else:
-            self.labtrans = DeepHitSingle.label_transform([0] + self.times.tolist() + [t.max()])
+            self.labtrans = DeepHitSingle.label_transform(100)
             net = tt.practical.MLPVanilla(x.shape[1], shared + nodes, self.labtrans.out_features, False)
             model = DeepHitSingle(net, tt.optim.Adam, duration_index = self.labtrans.cuts)
         model.optimizer.set_lr(lr)

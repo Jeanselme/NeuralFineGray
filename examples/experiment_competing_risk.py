@@ -18,10 +18,7 @@ if len(sys.argv) == 3:
 print("Script running experiments on ", dataset)
 x, t, e, covariates = datasets.load_dataset(dataset, competing = True) 
 
-# Hyperparameters and evaluations
-horizons = [0.25, 0.5, 0.75]
-times = np.quantile(t[e!=0], horizons)
-
+# Hyperparameters
 max_epochs = 1000
 grid_search = 100
 layers = [[i] * (j + 1) for i in [25, 50] for j in range(4)]
@@ -39,7 +36,7 @@ param_grid = {
     'distribution' : ['LogNormal', 'Weibull'],
     'layers' : layers_large,
 }
-DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsm'.format(dataset), times = times, random_seed = random_seed, fold = fold).train(x, t, e)
+DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsm'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e)
 
 # NFG Competing risk
 param_grid = {
@@ -53,10 +50,8 @@ param_grid = {
     'layers' : layers,
     'act': ['Tanh'],
 }
-NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.format(dataset), times = times, random_seed = random_seed, fold = fold).train(x, t, e)
-NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), times = times, random_seed = random_seed, fold = fold).train(x, t, e, cause_specific = True)
-param_grid['multihead'] = [False]
-NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg_onehead'.format(dataset), times = times, random_seed = random_seed, fold = fold).train(x, t, e)
+NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e)
+NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e, cause_specific = True)
 
 # Desurv
 param_grid = {
@@ -68,7 +63,7 @@ param_grid = {
     'layers': layers_large,
     'act': ['Tanh'],
 }
-DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds'.format(dataset), times = times, random_seed = random_seed, fold = fold).train(x, t, e)
+DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds'.format(dataset), random_seed = random_seed).train(x, t, e)
 
 # DeepHit Competing risk
 param_grid = {
@@ -79,4 +74,4 @@ param_grid = {
     'nodes' : layers,
     'shared' : layers
 }
-DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dh'.format(dataset), times = times, random_seed = random_seed, fold = fold).train(x, t, e)
+DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dh'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e)

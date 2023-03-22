@@ -37,10 +37,9 @@ class ToyExperiment():
 class Experiment():
 
     def __init__(self, hyper_grid = None, n_iter = 100, fold = None,
-                random_seed = 0, times = [0.25, 0.5, 0.75], path = 'results', save = True):
+                random_seed = 0, path = 'results', save = True, times = None):
         self.hyper_grid = list(ParameterSampler(hyper_grid, n_iter = n_iter, random_state = random_seed) if hyper_grid is not None else [{}])
         self.random_seed = random_seed
-        self.times = times
         
         # Allows to reload a previous model
         self.all_fold = fold
@@ -49,13 +48,15 @@ class Experiment():
         self.best_model = {}
         self.best_nll = None
 
+        self.times = times
+
         self.path = path
         self.tosave = save
         self.running_time = 0
 
     @classmethod
     def create(cls, hyper_grid = None, n_iter = 100, fold = None,
-                random_seed = 0, times = [0.25, 0.5, 0.75], path = 'results', force = False, save = True):
+                random_seed = 0, path = 'results', force = False, save = True):
         if not(force):
             path = path if fold is None else path + '_{}'.format(fold)
             if os.path.isfile(path + '.csv'):
@@ -69,7 +70,7 @@ class Experiment():
                     os.remove(path + '.pickle')
                     pass
                 
-        return cls(hyper_grid, n_iter, fold, random_seed, times, path, save)
+        return cls(hyper_grid, n_iter, fold, random_seed, path, save)
 
     @classmethod
     def load(cls, path):
@@ -85,8 +86,8 @@ class Experiment():
 
     @classmethod
     def merge(cls, hyper_grid = None, n_iter = 100, fold = None,
-            random_seed = 0, times = [0.25, 0.5, 0.75], path = 'results', force = False, save = True):
-        merged = cls(hyper_grid, n_iter, fold, random_seed, times, path, save)
+            random_seed = 0, path = 'results', force = False, save = True):
+        merged = cls(hyper_grid, n_iter, fold, random_seed, path, save)
         for i in range(5):
             path_i = path + '_{}.pickle'.format(i)
             if os.path.isfile(path_i):
@@ -104,14 +105,14 @@ class Experiment():
             except Exception as e:
                 print('Unable to save object')
                 
-    def save_results(self, x, t, e, times):
-        predictions = pd.DataFrame(0, index = self.fold_assignment.index, columns = pd.MultiIndex.from_product([self.risks, self.times]))
-
+    def save_results(self, x):
+        predictions = []
         for i in self.best_model:
             index = self.fold_assignment[self.fold_assignment == i].index
             model = self.best_model[i]
-            pred = pd.concat([self._predict_(model, x[index], times, r) for r in self.risks], axis = 1)
-            predictions.loc[index] = pred.values
+            predictions.append(pd.concat([self._predict_(model, x[index], r, index) for r in self.risks], axis = 1))
+
+        predictions = pd.concat(predictions, axis = 0).loc[self.fold_assignment.index]
 
         if self.tosave:
             fold_assignment = self.fold_assignment.copy().to_frame()
@@ -134,6 +135,7 @@ class Experiment():
             Returns:
                 (Dict, Dict): Dict of fitted model and Dict of observed performances
         """
+        self.times = np.sort(np.unique(t)) if self.times is None else self.times
         self.scaler = StandardScaler()
         x = self.scaler.fit_transform(x)
 
@@ -180,7 +182,7 @@ class Experiment():
             self.save(self)
 
         if self.all_fold is None:
-            return self.save_results(x, t, e, self.times)
+            return self.save_results(x)
 
     def _fit_(self, *params):
         raise NotImplementedError()
@@ -221,37 +223,10 @@ class DSMExperiment(Experiment):
     def _nll_(self, model, x, t, e, *train):
         return model.compute_nll(x, t, e)
 
-    def _predict_(self, model, x, times, r):
-        return pd.DataFrame(model.predict_survival(x, times.tolist()), columns = pd.MultiIndex.from_product([[r], times]))
+    def _predict_(self, model, x, r, index):
+        return pd.DataFrame(model.predict_survival(x, self.times.tolist(), risk = r), columns = pd.MultiIndex.from_product([[r], self.times]), index = index)
 
-class DeepSurvExperiment(Experiment):
-
-    def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter, cause_specific):  
-        from pycox.models import CoxPH
-        import torchtuples as tt
-
-        nodes = hyperparameter.pop('nodes', 100)
-        epochs = hyperparameter.pop('epochs', 1000)
-        batch = hyperparameter.pop('batch', 250)
-        lr = hyperparameter.pop('learning_rate', 0.001)
-
-        callbacks = [tt.callbacks.EarlyStopping()]
-        net = tt.practical.MLPVanilla(x.shape[1], nodes, 1, False).double()
-        model = CoxPH(net, tt.optim.Adam)
-        model.optimizer.set_lr(lr)
-        model.fit(x, (t, e), batch_size = batch, epochs = epochs, callbacks = callbacks, val_data = (x_val, (t_val, e_val)))
-        _ = model.compute_baseline_hazards()
-
-        return model
-
-    def _nll_(self, model, x, t, e, *train):
-        return - model.partial_log_likelihood(x, (t, e)).mean()
-
-    def _predict_(self, model, x, times, r):
-        return pd.DataFrame(from_surv_to_t(model.predict_surv_df(x), times), columns = pd.MultiIndex.from_product([[r], times]))
-
-
-class DeepHitExperiment(DeepSurvExperiment):
+class DeepHitExperiment(Experiment):
     """
         This class require a slightly more involved saving scheme to avoid a lambda error with pickle
         The models are removed at each save and reloaded before saving results 
@@ -292,7 +267,7 @@ class DeepHitExperiment(DeepSurvExperiment):
             except Exception as e:
                 print('Unable to save object')
 
-    def save_results(self, x, t, e, times):
+    def save_results(self, x):
         from pycox.models import DeepHitSingle, DeepHit
 
         # Reload models in memory
@@ -302,7 +277,7 @@ class DeepHitExperiment(DeepSurvExperiment):
                 net, cuts = self.best_model[i]
                 self.best_model[i] = DeepHit(net, duration_index = cuts) if len(self.risks) > 1 \
                                 else DeepHitSingle(net, duration_index = cuts)
-        return super().save_results(x, t, e , times)
+        return super().save_results(x)
 
     def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter, cause_specific): 
         from deephit.utils import CauseSpecificNet, tt, LabTransform
@@ -318,10 +293,12 @@ class DeepHitExperiment(DeepSurvExperiment):
         num_risks = len(np.unique(e))- 1
         if  num_risks > 1:
             self.labtrans = LabTransform(100)
+            self.labtrans.fit(t, e)
             net = CauseSpecificNet(x.shape[1], shared, nodes, num_risks, self.labtrans.out_features, False)
             model = DeepHit(net, tt.optim.Adam, duration_index = self.labtrans.cuts)
         else:
             self.labtrans = DeepHitSingle.label_transform(100)
+            self.labtrans.fit(t, e)
             net = tt.practical.MLPVanilla(x.shape[1], shared + nodes, self.labtrans.out_features, False)
             model = DeepHitSingle(net, tt.optim.Adam, duration_index = self.labtrans.cuts)
         model.optimizer.set_lr(lr)
@@ -332,13 +309,11 @@ class DeepHitExperiment(DeepSurvExperiment):
     def _nll_(self, model, x, t, e, *train):
         return model.score_in_batches(x.astype('float32'), self.labtrans.transform(t, e))['loss']
 
-    def _predict_(self, model, x, times, r):
-        return pd.DataFrame(from_surv_to_t(model.predict_surv_df(x.astype('float32')), times), columns = pd.MultiIndex.from_product([[r], times]))
+    def _predict_(self, model, x, r, index):
+        survival = 1 - model.predict_cif(x.astype('float32'))[r - 1].T
+        return pd.DataFrame(survival, index = index, columns = pd.MultiIndex.from_product([[r], self.labtrans.cuts]))
 
 class NFGExperiment(DSMExperiment):
-
-    def save_results(self, x, t, e, times):
-        return super().save_results(x, t, e, self.__preprocess__(times))
 
     def __preprocess__(self, t, save = False):
         if save:
@@ -346,6 +321,7 @@ class NFGExperiment(DSMExperiment):
         return t / self.max_t
 
     def train(self, x, t, e, cause_specific = False):
+        self.times = np.sort(np.unique(t)) #if self.times is None else self.times
         t_norm = self.__preprocess__(t, True)
         return super().train(x, t_norm, e, cause_specific)
 
@@ -362,8 +338,8 @@ class NFGExperiment(DSMExperiment):
         
         return model
 
-    def _predict_(self, model, x, times, r):
-        return pd.DataFrame(model.predict_survival(x, times.tolist(), r if model.torch_model.risks >= r else 1), columns = pd.MultiIndex.from_product([[r], times]))
+    def _predict_(self, model, x, r, index):
+        return pd.DataFrame(model.predict_survival(x, self.__preprocess__(self.times).tolist(), r if model.torch_model.risks >= r else 1), columns = pd.MultiIndex.from_product([[r], self.times]), index = index)
 
     def likelihood(self, x, t, e):
         t_norm = self.__preprocess__(t)

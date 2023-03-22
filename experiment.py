@@ -17,18 +17,6 @@ class CPU_Unpickler(pickle.Unpickler):
         else: 
             return super().find_class(module, name)
 
-def from_surv_to_t(pred, times):
-    """
-        Interpolate pred for predictions at time
-
-        Pred: Horizon * Patients
-    """
-    from scipy.interpolate import interp1d
-    res = []
-    for i in pred.columns:
-        res.append(interp1d(pred.index, pred[i].values, fill_value = (1, pred[i].values[-1]), bounds_error = False)(times))
-    return np.vstack(res)
-
 class ToyExperiment():
 
     def train(self, *args, cause_specific = False):
@@ -37,7 +25,7 @@ class ToyExperiment():
 class Experiment():
 
     def __init__(self, hyper_grid = None, n_iter = 100, fold = None,
-                random_seed = 0, path = 'results', save = True, times = None):
+                random_seed = 0, path = 'results', save = True, times = 100):
         self.hyper_grid = list(ParameterSampler(hyper_grid, n_iter = n_iter, random_state = random_seed) if hyper_grid is not None else [{}])
         self.random_seed = random_seed
         
@@ -135,7 +123,7 @@ class Experiment():
             Returns:
                 (Dict, Dict): Dict of fitted model and Dict of observed performances
         """
-        self.times = np.sort(np.unique(t)) if self.times is None else self.times
+        self.times = np.linspace(t.min(), t.max(), self.times) if isinstance(self.times, int) else self.times
         self.scaler = StandardScaler()
         x = self.scaler.fit_transform(x)
 
@@ -292,13 +280,11 @@ class DeepHitExperiment(Experiment):
         callbacks = [tt.callbacks.EarlyStopping()]
         num_risks = len(np.unique(e))- 1
         if  num_risks > 1:
-            self.labtrans = LabTransform(100)
-            self.labtrans.fit(t, e)
+            self.labtrans = LabTransform(self.times.tolist())
             net = CauseSpecificNet(x.shape[1], shared, nodes, num_risks, self.labtrans.out_features, False)
             model = DeepHit(net, tt.optim.Adam, duration_index = self.labtrans.cuts)
         else:
-            self.labtrans = DeepHitSingle.label_transform(100)
-            self.labtrans.fit(t, e)
+            self.labtrans = DeepHitSingle.label_transform(self.times.tolist())
             net = tt.practical.MLPVanilla(x.shape[1], shared + nodes, self.labtrans.out_features, False)
             model = DeepHitSingle(net, tt.optim.Adam, duration_index = self.labtrans.cuts)
         model.optimizer.set_lr(lr)
@@ -321,7 +307,7 @@ class NFGExperiment(DSMExperiment):
         return t / self.max_t
 
     def train(self, x, t, e, cause_specific = False):
-        self.times = np.sort(np.unique(t)) #if self.times is None else self.times
+        self.times = np.linspace(t.min(), t.max(), self.times) if isinstance(self.times, int) else self.times
         t_norm = self.__preprocess__(t, True)
         return super().train(x, t_norm, e, cause_specific)
 

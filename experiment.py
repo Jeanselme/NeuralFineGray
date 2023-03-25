@@ -271,20 +271,22 @@ class DeepHitExperiment(Experiment):
         from deephit.utils import CauseSpecificNet, tt, LabTransform
         from pycox.models import DeepHitSingle, DeepHit
 
+        n = hyperparameter.pop('n', 15)
         nodes = hyperparameter.pop('nodes', [100])
         shared = hyperparameter.pop('shared', [100])
         epochs = hyperparameter.pop('epochs', 1000)
         batch = hyperparameter.pop('batch', 250)
         lr = hyperparameter.pop('learning_rate', 0.001)
 
+        self.eval_times = np.linspace(t.min(), t.max(), n)
         callbacks = [tt.callbacks.EarlyStopping()]
         num_risks = len(np.unique(e))- 1
         if  num_risks > 1:
-            self.labtrans = LabTransform(self.times.tolist())
+            self.labtrans = LabTransform(self.eval_times.tolist())
             net = CauseSpecificNet(x.shape[1], shared, nodes, num_risks, self.labtrans.out_features, False)
             model = DeepHit(net, tt.optim.Adam, duration_index = self.labtrans.cuts)
         else:
-            self.labtrans = DeepHitSingle.label_transform(self.times.tolist())
+            self.labtrans = DeepHitSingle.label_transform(self.eval_times.tolist())
             net = tt.practical.MLPVanilla(x.shape[1], shared + nodes, self.labtrans.out_features, False)
             model = DeepHitSingle(net, tt.optim.Adam, duration_index = self.labtrans.cuts)
         model.optimizer.set_lr(lr)
@@ -297,7 +299,7 @@ class DeepHitExperiment(Experiment):
 
     def _predict_(self, model, x, r, index):
         survival = 1 - model.predict_cif(x.astype('float32'))[r - 1].T
-        return pd.DataFrame(survival, index = index, columns = pd.MultiIndex.from_product([[r], self.labtrans.cuts]))
+        return pd.DataFrame(survival, index = index, columns = pd.MultiIndex.from_product([[r], self.eval_times]))
 
 class NFGExperiment(DSMExperiment):
 

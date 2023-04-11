@@ -14,12 +14,7 @@ x, t, e, covariates = datasets.load_dataset(dataset, competing = True)
 
 print(np.linalg.matrix_rank(x), np.linalg.matrix_rank(np.concatenate([x, t.reshape((-1, 1))], axis = 1)))
 
-# Hyperparameters and evaluations
-horizons = [0.25, 0.5, 0.75]
-times = np.quantile(t[e!=0], horizons)
-
 max_epochs = 1000
-grid_search = 1
 
 # DeSurv
 param_grid = {
@@ -32,4 +27,4 @@ param_grid = {
 }
 for n in [1, 15, 100, 1000]:
     param_grid['n'] = [n]
-    DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds_n={}'.format(dataset, n), times = times, random_seed = random_seed).train(x, t, e)
+    DeSurvExperiment.create(param_grid, n_iter = 1, path = 'Results/{}_ds_n={}'.format(dataset, n), random_seed = random_seed).train(x, t, e)

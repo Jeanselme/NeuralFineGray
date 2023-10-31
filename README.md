@@ -24,9 +24,14 @@ To reproduce the paper's results:
 0. Clone the repository with dependencies: `git clone git@github.com:Jeanselme/NeuralFineGray.git --recursive`
 1. Create a conda environment with all necessary libraries `pycox`, `lifelines`, `pysurvival`
 2. Add path `export PYTHONPATH="$PWD:$PWD/DeepSurvivalMachines:$PYTHONPATH"`
-3. Run `examples/experiment_competing_risk.py FRAMINGHAM`
-4. Repeat with `PBC`, `SYNTHETIC_COMPETING` and `SEER`
-5. Analysis using `examples/Analysis.ipynb`
+3. Run `examples/experiment_competing_risk.py FRAMINGHAM` to run all models on the `FRAMINGHAM` dataset
+4. Repeat with `PBC`, `SYNTHETIC_COMPETING` and `SEER` to run on each dataset
+5. Analysis using `examples/Analysis.ipynb` to measure performance
+
+Note that you will need to export the `SEER` dataset from [https://seer.cancer.gov/data/](https://seer.cancer.gov/data/). The previous scripts allow you to reproduce all the models presented in the paper except the Fine-Gray appraoch that requires: 
+0. Install R and the libraries: `riskRegression`, `prodlim`, `survival`, `cmprsk` and `readr`
+1. Run `examples/process_data.py FRAMINGHAM` to create a csv files with the same data split used in the Python scripts
+2. Run `examples/FineGray.R` to create the predictions of a Fine-Gray model (Note that you will need to change the content of this file for running on a subset of datasets)
 
 ## Compare to a new method
 Adding a new method consists in adding a child to `Experiment` in `experiment.py` with functions to compute the nll and fit the model.

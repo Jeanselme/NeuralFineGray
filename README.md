@@ -30,8 +30,9 @@ To reproduce the paper's results:
 
 Note that you will need to export the `SEER` dataset from [https://seer.cancer.gov/data/](https://seer.cancer.gov/data/). The previous scripts allow you to reproduce all the models presented in the paper except the Fine-Gray appraoch that requires: 
 0. Install R and the libraries: `riskRegression`, `prodlim`, `survival`, `cmprsk` and `readr`
-1. Run `examples/process_data.py FRAMINGHAM` to create a csv files with the same data split used in the Python scripts
-2. Run `examples/FineGray.R` to create the predictions of a Fine-Gray model (Note that you will need to change the content of this file for running on a subset of datasets)
+1. Create a folder `data/` in `examples/` to save the generated files
+2. Run `examples/process_data.py FRAMINGHAM` to create a csv files with the same data split used in the Python scripts
+3. Run `examples/FineGray.R` to create the predictions of a Fine-Gray model (Note that you will need to change the content of this file for running on a subset of datasets)
 
 ## Compare to a new method
 Adding a new method consists in adding a child to `Experiment` in `experiment.py` with functions to compute the nll and fit the model.

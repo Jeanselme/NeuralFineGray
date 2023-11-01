@@ -7,7 +7,7 @@ import numpy as np
 
 EPS = 1e-8
 
-def load_dataset(dataset='SUPPORT', normalize = True, **kwargs):
+def load_dataset(dataset='SUPPORT', path = './', normalize = True, **kwargs):
     if dataset == 'GBSG':
         df = datasets.gbsg.read_df()
     elif dataset == 'METABRIC':
@@ -20,7 +20,7 @@ def load_dataset(dataset='SUPPORT', normalize = True, **kwargs):
         df = datasets.rr_nl_nhp.read_df()
         df = df.drop([c for c in df.columns if 'true' in c], axis = 'columns')
     elif dataset == 'SEER':
-        df = pd.read_csv('../data/export.csv')
+        df = pd.read_csv(path + 'data/export.csv')
         df = process_seer(df)
         df['duration'] += EPS # Avoid problem of the minimum value 0
     elif dataset == 'SYNTHETIC_COMPETING':

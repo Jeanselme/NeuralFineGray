@@ -31,17 +31,10 @@ class PositiveLinear(nn.Module):
       return nn.functional.linear(input, self.log_weight ** 2)
 
 
-def create_representation_positive(inputdim, layers, activation, dropout = 0):
+def create_representation_positive(inputdim, layers, dropout = 0):
   modules = []
-  if activation == 'ReLU6':
-    act = nn.ReLU6()
-  elif activation == 'ReLU':
-    act = nn.ReLU()
-  elif activation == 'Tanh':
-    act = nn.Tanh()
-  else:
-    raise ValueError("Unknown {} activation".format(activation))
-  
+  act = nn.Tanh()
+
   prevdim = inputdim
   for hidden in layers:
     modules.append(PositiveLinear(prevdim, hidden, bias = True))
@@ -91,9 +84,9 @@ class NeuralFineGrayTorch(nn.Module):
     self.embed = nn.Sequential(*create_representation(inputdim, layers + [inputdim], act, self.dropout)) # Assign each point to a cluster
     self.balance = nn.Sequential(*create_representation(inputdim, layers + [risks], act)) # Define balance between outcome (ensure sum < 1)
     self.outcome = nn.ModuleList(
-                      [create_representation_positive(inputdim + 1, layers_surv + [1], 'Tanh') # Multihead (one for each outcome)
+                      [create_representation_positive(inputdim + 1, layers_surv + [1]) # Multihead (one for each outcome)
                   for _ in range(risks)]) if multihead \
-                  else create_representation_positive(inputdim + 1, layers_surv + [risks], 'Tanh')
+                  else create_representation_positive(inputdim + 1, layers_surv + [risks])
     self.softlog = nn.LogSoftmax(dim = 1)
 
     self.forward = self.forward_multihead if multihead else self.forward_single

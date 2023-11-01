@@ -1,7 +1,5 @@
-from sksurv.metrics import integrated_brier_score
-from sklearn.model_selection import ParameterSampler
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold, ShuffleSplit, ParameterSampler, train_test_split
 import pandas as pd
 import numpy as np
 import pickle
@@ -25,9 +23,10 @@ class ToyExperiment():
 class Experiment():
 
     def __init__(self, hyper_grid = None, n_iter = 100, fold = None,
-                random_seed = 0, path = 'results', save = True, times = 100):
+                k = 5, random_seed = 0, path = 'results', save = True, delete_log = False, times = 100):
         self.hyper_grid = list(ParameterSampler(hyper_grid, n_iter = n_iter, random_state = random_seed) if hyper_grid is not None else [{}])
         self.random_seed = random_seed
+        self.k = k
         
         # Allows to reload a previous model
         self.all_fold = fold
@@ -40,11 +39,12 @@ class Experiment():
 
         self.path = path
         self.tosave = save
+        self.delete_log = delete_log
         self.running_time = 0
 
     @classmethod
-    def create(cls, hyper_grid = None, n_iter = 100, fold = None,
-                random_seed = 0, path = 'results', force = False, save = True):
+    def create(cls, hyper_grid = None, n_iter = 100, fold = None, k = 5,
+                random_seed = 0, path = 'results', force = False, save = True, delete_log = False):
         if not(force):
             path = path if fold is None else path + '_{}'.format(fold)
             if os.path.isfile(path + '.csv'):
@@ -58,7 +58,7 @@ class Experiment():
                     os.remove(path + '.pickle')
                     pass
                 
-        return cls(hyper_grid, n_iter, fold, random_seed, path, save)
+        return cls(hyper_grid, n_iter, fold, k, random_seed, path, save, delete_log)
 
     @classmethod
     def load(cls, path):
@@ -73,9 +73,9 @@ class Experiment():
             return se
 
     @classmethod
-    def merge(cls, hyper_grid = None, n_iter = 100, fold = None,
-            random_seed = 0, path = 'results', force = False, save = True):
-        merged = cls(hyper_grid, n_iter, fold, random_seed, path, save)
+    def merge(cls, hyper_grid = None, n_iter = 100, fold = None, k = 5,
+            random_seed = 0, path = 'results', force = False, save = True, delete_log = False):
+        merged = cls(hyper_grid, n_iter, fold, k, random_seed, path, save, delete_log)
         for i in range(5):
             path_i = path + '_{}.pickle'.format(i)
             if os.path.isfile(path_i):
@@ -100,13 +100,15 @@ class Experiment():
             model = self.best_model[i]
             predictions.append(pd.concat([self._predict_(model, x[index], r, index) for r in self.risks], axis = 1))
 
-        predictions = pd.concat(predictions, axis = 0).loc[self.fold_assignment.index]
+        predictions = pd.concat(predictions, axis = 0).loc[self.fold_assignment.dropna().index]
 
         if self.tosave:
             fold_assignment = self.fold_assignment.copy().to_frame()
             fold_assignment.columns = pd.MultiIndex.from_product([['Use'], ['']])
             pd.concat([predictions, fold_assignment], axis = 1).to_csv(self.path + '.csv')
 
+        if self.delete_log:
+            os.remove(self.path + '.pickle')
         return predictions
 
     def train(self, x, t, e, cause_specific = False):
@@ -128,8 +130,11 @@ class Experiment():
         x = self.scaler.fit_transform(x)
 
         self.risks = np.unique(e[e > 0])
-        self.fold_assignment = pd.Series(0, index = range(len(x)))
-        kf = StratifiedKFold(random_state = self.random_seed, shuffle = True)
+        self.fold_assignment = pd.Series(np.nan, index = range(len(x)))
+        if self.k == 1:
+            kf = ShuffleSplit(n_splits = self.k, random_state = self.random_seed, test_size = 0.2)
+        else:
+            kf = StratifiedKFold(n_splits = self.k, random_state = self.random_seed, shuffle = True)
 
         # First initialization
         if self.best_nll is None:
@@ -298,7 +303,10 @@ class DeepHitExperiment(Experiment):
         return model.score_in_batches(x.astype('float32'), self.labtrans.transform(t, e))['loss']
 
     def _predict_(self, model, x, r, index):
-        survival = 1 - model.predict_cif(x.astype('float32'))[r - 1].T
+        if len(self.risks) == 1:
+            survival = model.predict_surv_df(x.astype('float32')).T
+        else:
+            survival = 1 - model.predict_cif(x.astype('float32'))[r - 1].T
         return pd.DataFrame(survival, index = index, columns = pd.MultiIndex.from_product([[r], self.eval_times]))
 
 class NFGExperiment(DSMExperiment):

@@ -24,6 +24,18 @@ class Experiment():
 
     def __init__(self, hyper_grid = None, n_iter = 100, fold = None,
                 k = 5, random_seed = 0, path = 'results', save = True, delete_log = False, times = 100):
+        """
+        Args:
+            hyper_grid (Dict, optional): Dictionary of parameters to explore.
+            n_iter (int, optional): Number of random grid search to perform. Defaults to 100.
+            fold (int, optional): Fold to compute (this allows to parallelise computation). If None, starts from 0.
+            k (int, optional): Number of split to use for the cross-validation. Defaults to 5.
+            random_seed (int, optional): Random seed for reproducibility. Defaults to 0.
+            path (str, optional): Path to save results and log. Defaults to 'results'.
+            save (bool, optional): Should we save result and log. Defaults to True.
+            delete_log (bool, optional): Should we delete the log after all training. Defaults to False.
+            times (int, optional): Number of time points where to evaluates. Defaults to 100.
+        """
         self.hyper_grid = list(ParameterSampler(hyper_grid, n_iter = n_iter, random_state = random_seed) if hyper_grid is not None else [{}])
         self.random_seed = random_seed
         self.k = k

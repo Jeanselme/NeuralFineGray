@@ -8,38 +8,68 @@ library(readr)
 
 # Open data
 datasets = c('SEER', 'FRAMINGHAM', 'SYNTHETIC_COMPETING', 'PBC')
-terms = list(c(20.00000001, 48.00000001, 97.00000001),
-             c(2153.75,4589.5,6620.75),
-             c(3.00000001, 11.00000001, 30.00000001),
-             c(3.18760267221553,4.95356477932318,7.45329098674844))
 
-for (i in 1:4) {
+for (dataset in datasets) {
     # Open saved train file
-    data = read_csv(paste0('data/', datasets[i], '.csv'))
-    prediction = matrix(0, nrow = nrow(data), ncol = 2 * 3 + 1) # # outcomes * # Times
-    rownames(prediction) = as.numeric(rownames(data)) - 1
-    colnames(prediction) = c(terms[i][[1]], terms[i][[1]], 'Use')
+    data = read_csv(paste0('../data/', dataset, '.csv'))
+
+    # Create matrix results for both Fine Gray and Cox
+    prediction_fg = matrix(0, nrow = nrow(data), ncol = 2 * 100 + 1) # outcomes * Times
+    rownames(prediction_fg) = as.numeric(rownames(data)) - 1
+    eval_times = seq(min(data['Time']), max(data['Time']), length.out = 100)
+    colnames(prediction_fg) = c(eval_times, eval_times, 'Use')
+    prediction_cs = prediction_fg # Make a copy
+
+    var_tot = setdiff(colnames(data), c("Time", "Event", "Fold_0", "Fold_1", "Fold_2", "Fold_3", "Fold_4"))
 
     # Cross validation
     for (fold in 0:4) {
-        data_folder = subset(data, data[paste0("Fold_", fold)] == "Train")
+        print(fold)
+        data_folder = subset(data, data[paste0("Fold_", fold)] == "Train")[append(var_tot, c('Time', 'Event'))]
+
+        # Create associated formula
+        var = setdiff(colnames(data_folder), c("Time", "Event"))
+        formula = reformulate(var, response = "Hist(Time, Event)") 
+        if (dataset == 'FRAMINGHAM') {
+            formula = reformulate(setdiff(colnames(data_folder), c("Time", "Event", 'feature8')), response = "Hist(Time, Event)") 
+            if (fold == 0){
+                formula = reformulate(setdiff(colnames(data_folder), c("Time", "Event", 'feature6', 'feature7', 'feature8')), response = "Hist(Time, Event)") 
+            }
+        }
+        print(formula)
+
         # Fit model 
-        formula = reformulate(setdiff(colnames(data_folder), c("Time", "Event", "Fold_0", "Fold_1", "Fold_2", "Fold_3", "Fold_4")), response = "Hist(Time, Event)") 
-        
         for (outcome in 1:2) {
             test = (data[paste0("Fold_", fold)] == "Test")
+
+            # Run Fine Gray
             tryCatch(
                 expr = {
                         model = FGR(formula, data = data_folder, cause = outcome)
-                        # Predict at the time horizons of interest
-                        prediction[test,((outcome-1)*3+1):(outcome*3)] = 1 - predict(model, subset(data, test), terms[i][[1]], cause = outcome)
+                        # Predict at the time horizons of interest CSC + predictRisk
+                        prediction_fg[test,((outcome-1)*100+1):(outcome*100)] = 1 - predict(model, subset(data, test), eval_times, cause = outcome)
                     },
                 error = function(e){ 
-                    prediction[test,((outcome-1)*3+1):(outcome*3)] = NA
+                    print(e)
+                    prediction_fg[test,((outcome-1)*100+1):(outcome*100)] = NA
                 })
-            prediction[(data[paste0("Fold_", fold)] == "Test"), 7] = fold
+            prediction_fg[(data[paste0("Fold_", fold)] == "Test"), ncol(prediction_fg)] = fold
+
+            # Run Cause specific Cox
+            tryCatch(
+                expr = {
+                        model = CSC(formula, data = data_folder, cause = outcome, method = "breslow", fitter = "cph", iter = 100)
+                        # Predict at the time horizons of interest CSC + predictRisk
+                        prediction_cs[test,((outcome-1)*100+1):(outcome*100)] = 1 - predictRisk(model, subset(data, test), eval_times, cause = outcome)
+                    },
+                error = function(e){ 
+                    print(e)
+                    prediction_cs[test,((outcome-1)*100+1):(outcome*100)] = NA
+                })
+            prediction_cs[(data[paste0("Fold_", fold)] == "Test"), ncol(prediction_cs)] = fold
         }
     }
     # Save
-    write.csv(prediction, paste0('Results/', datasets[i], '_finegray.csv'))
+    write.csv(prediction_fg, paste0('Results/', dataset, '_finegray.csv'))
+    write.csv(prediction_cs, paste0('Results/', dataset, '_coxcs.csv'))
 }

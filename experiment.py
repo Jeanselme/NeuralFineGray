@@ -316,7 +316,7 @@ class DeepHitExperiment(Experiment):
 
     def _predict_(self, model, x, r, index):
         if len(self.risks) == 1:
-            survival = model.predict_surv_df(x.astype('float32')).T
+            survival = model.predict_surv_df(x.astype('float32')).T.values
         else:
             survival = 1 - model.predict_cif(x.astype('float32'))[r - 1].T
         return pd.DataFrame(survival, index = index, columns = pd.MultiIndex.from_product([[r], self.eval_times]))

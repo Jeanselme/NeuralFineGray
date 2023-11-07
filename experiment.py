@@ -316,10 +316,15 @@ class DeepHitExperiment(Experiment):
 
     def _predict_(self, model, x, r, index):
         if len(self.risks) == 1:
-            survival = model.predict_surv_df(x.astype('float32')).T.values
+            survival = model.predict_surv_df(x.astype('float32')).values
         else:
-            survival = 1 - model.predict_cif(x.astype('float32'))[r - 1].T
-        return pd.DataFrame(survival, index = index, columns = pd.MultiIndex.from_product([[r], self.eval_times]))
+            survival = 1 - model.predict_cif(x.astype('float32'))[r - 1]
+        # Interpolate at the point of evaluation
+        survival = pd.DataFrame(survival, columns = index, index = self.eval_times)
+        predictions = pd.DataFrame(np.nan, columns = index, index = self.times)
+        survival = pd.concat([survival, predictions]).sort_index(kind = 'stable').ffill().fillna(1)
+        survival = survival[~survival.index.duplicated(keep='first')]
+        return survival.loc[self.times].set_index(pd.MultiIndex.from_product([[r], self.times])).T
 
 class NFGExperiment(DSMExperiment):
 

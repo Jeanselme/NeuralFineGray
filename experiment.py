@@ -295,7 +295,7 @@ class DeepHitExperiment(Experiment):
         batch = hyperparameter.pop('batch', 250)
         lr = hyperparameter.pop('learning_rate', 0.001)
 
-        self.eval_times = np.linspace(t.min(), t.max(), n)
+        self.eval_times = np.linspace(0, t.max(), n)
         callbacks = [tt.callbacks.EarlyStopping()]
         num_risks = len(np.unique(e))- 1
         if  num_risks > 1:
@@ -312,6 +312,7 @@ class DeepHitExperiment(Experiment):
         return model
 
     def _nll_(self, model, x, t, e, *train):
+        print(self.labtrans.transform(t, e))
         return model.score_in_batches(x.astype('float32'), self.labtrans.transform(t, e))['loss']
 
     def _predict_(self, model, x, r, index):

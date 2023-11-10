@@ -312,7 +312,6 @@ class DeepHitExperiment(Experiment):
         return model
 
     def _nll_(self, model, x, t, e, *train):
-        print(self.labtrans.transform(t, e))
         return model.score_in_batches(x.astype('float32'), self.labtrans.transform(t, e))['loss']
 
     def _predict_(self, model, x, r, index):

@@ -38,10 +38,13 @@ class DeSurvTorch(nn.Module):
     self.risks = risks  # Competing risks
     self.optimizer = optimizer
 
+    self.embedding = nn.Sequential(*create_representation(inputdim, layers + [inputdim], act))
     self.balance = nn.Sequential(*create_representation(inputdim, layers + [risks], act, last = nn.Softmax(dim = 1))) # Balance between risks
     self.odenet = CondODENet(inputdim, layers_surv, risks, act, n = n)
 
   def forward(self, x, horizon):
+    x = self.embedding(x)
+    
     balance = self.balance(x)
     Fr = self.odenet(x, horizon)
   

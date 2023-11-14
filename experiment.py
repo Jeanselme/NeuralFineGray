@@ -155,7 +155,6 @@ class Experiment():
             self.fold_assignment[test_index] = i
             if i < self.fold: continue # When reload: start last point
             if not(self.all_fold is None) and (self.all_fold != i): continue
-            start_time = time.process_time()
             print('Fold {}'.format(i))
 
             train_index, dev_index = train_test_split(train_index, test_size = 0.2, random_state = self.random_seed, stratify = e[train_index])
@@ -172,7 +171,10 @@ class Experiment():
                 np.random.seed(self.random_seed)
                 torch.manual_seed(self.random_seed)
 
+                start_time = time.process_time()
                 model = self._fit_(x_train, t_train, e_train, x_val, t_val, e_val, hyper.copy(), cause_specific = cause_specific)
+                self.running_time += time.process_time() - start_time
+                
                 nll = self._nll_(model, x_dev, t_dev, e_dev, e_train, t_train)
                 if nll < self.best_nll:
                     self.best_hyper[i] = hyper
@@ -183,7 +185,6 @@ class Experiment():
                 self.save(self)
             self.fold, self.iter = i + 1, 0
             self.best_nll = np.inf
-            self.running_time += time.process_time() - start_time
             self.save(self)
 
         if self.all_fold is None:

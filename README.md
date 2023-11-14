@@ -1,6 +1,6 @@
 # Neural Fine Gray
-This repository allows to reproduce the results in [Neural Fine Gray](https://arxiv.org/abs/2305.06703)
-A neural network approach to the problem of competing risks, leveraging monotone neural networks to model the cumulative incidence function.
+This repository allows to reproduce the results in [Neural Fine Gray](https://arxiv.org/abs/2305.06703) - Please use the release: CHIL for exact reproduction.  
+A neural network approach to the problem of competing risks, leveraging monotone neural networks to model the cumulative incidence functions.
 
 ## Model
 The model consists in two neural networks: one models the cumulative incidence function and the other the balance to ensure that they add up to one.

@@ -65,8 +65,8 @@ param_grid = {
     'learning_rate' : [1e-3, 1e-4],
     'batch': batch,
 
-    'layers_surv': layers_large,
-    'layers': layers_large,
+    'layers_surv': layers,
+    'layers': layers,
     'act': ['Tanh'],
 }
 DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds'.format(dataset), random_seed = random_seed).train(x, t, e)

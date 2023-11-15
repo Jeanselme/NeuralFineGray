@@ -91,39 +91,28 @@ class NeuralFineGrayTorch(nn.Module):
 
     self.forward = self.forward_multihead if multihead else self.forward_single
 
-  def forward_multihead(self, x, horizon, gradient = False):
+  def forward_multihead(self, x, horizon):
     x_rep = self.embed(x)
     log_beta = self.softlog(self.balance(x_rep)) # Balance
 
     # Compute cumulative hazard function
-    sr, hr = [], []
+    sr = []
+    tau_outcome = horizon.clone().detach().requires_grad_(True).unsqueeze(1)
     for outcome_competing in self.outcome:
-      tau_outcome = horizon.clone().detach().requires_grad_(gradient) # Copy with independent gradient
-      outcome = tau_outcome.unsqueeze(1) * outcome_competing(torch.cat((x_rep, tau_outcome.unsqueeze(1)), 1))
+      outcome = tau_outcome * outcome_competing(torch.cat((x_rep, tau_outcome), 1))
       sr.append(- outcome)
 
-      if gradient:
-        derivative = grad(outcome.sum(), tau_outcome, create_graph = True)[0]
-        hr.append(torch.log(derivative.clamp_(1e-10)).unsqueeze(1))
-
-    hr = torch.cat(hr, -1) if gradient else None
     sr = torch.cat(sr, -1)
+    return sr, log_beta, tau_outcome
+  
+  def gradient(self, outcomes, horizon, e):
+    return grad([- outcomes[:, r][e == (r + 1)].sum() for r in range(self.risks)], horizon, create_graph = True)[0].clamp_(1e-10)[:, 0]
 
-    return sr, hr, log_beta
-
-  def forward_single(self, x, horizon, gradient = False):
+  def forward_single(self, x, horizon):
     x_rep = self.embed(x)
     log_beta = self.softlog(self.balance(x_rep)) # Balance
 
-    # Compute cumulative hazard function 
-    tau_outcome = horizon.clone().detach().requires_grad_(gradient) # Copy with independent gradient
-    outcome = tau_outcome.unsqueeze(1) * self.outcome(torch.cat((x_rep, tau_outcome.unsqueeze(1)), 1))
-
-    if gradient:
-      hr = []
-      for r in range(self.risks):
-        derivative = grad(outcome[:, r].sum(), tau_outcome, create_graph = True)[0]
-        hr.append(torch.log(derivative.clamp_(1e-10)).unsqueeze(1))
-    hr = torch.cat(hr, -1) if gradient else None
-
-    return -outcome, hr, log_beta
+    # Compute cumulative hazard function
+    tau_outcome = horizon.clone().detach().requires_grad_(True).unsqueeze(1)
+    outcome = tau_outcome * self.outcome(torch.cat((x_rep, tau_outcome), 1))
+    return -outcome, log_beta, tau_outcome

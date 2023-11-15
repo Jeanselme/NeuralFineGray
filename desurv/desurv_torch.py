@@ -48,4 +48,4 @@ class DeSurvTorch(nn.Module):
     balance = self.balance(x)
     Fr = self.odenet(x, horizon)
   
-    return balance * Fr, balance, Fr
+    return balance * Fr, balance, Fr, x

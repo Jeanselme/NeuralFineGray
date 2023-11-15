@@ -32,7 +32,7 @@ class CondODENet(nn.Module):
 class DeSurvTorch(nn.Module):
 
   def __init__(self, inputdim, layers = [100, 100, 100], act = 'ReLU', layers_surv = [100],
-               risks = 1, optimizer = "Adam", n = 15):
+               risks = 1, optimizer = "Adam", n = 15, multihead = True):
     super().__init__()
     self.input_dim = inputdim
     self.risks = risks  # Competing risks
@@ -40,12 +40,31 @@ class DeSurvTorch(nn.Module):
 
     self.embedding = nn.Sequential(*create_representation(inputdim, layers + [inputdim], act))
     self.balance = nn.Sequential(*create_representation(inputdim, layers + [risks], act, last = nn.Softmax(dim = 1))) # Balance between risks
-    self.odenet = CondODENet(inputdim, layers_surv, risks, act, n = n)
 
-  def forward(self, x, horizon):
-    x = self.embedding(x)
+    self.odenet = nn.ModuleList(
+                      [CondODENet(inputdim, layers_surv, 1, act, n = n) # Multihead (one for each outcome)
+                  for _ in range(risks)]) if multihead \
+                  else CondODENet(inputdim, layers_surv, risks, act, n = n)
     
+    self.forward = self.forward_multihead if multihead else self.forward_single
+    self.gradient = self.gradient_multihead if multihead else self.gradient_single
+
+  def forward_single(self, x, horizon):
+    x = self.embedding(x)
     balance = self.balance(x)
     Fr = self.odenet(x, horizon)
   
     return balance * Fr, balance, Fr, x
+  
+  def gradient_single(self, x_emb, horizon, k):
+    return self.odenet.f(torch.cat((horizon.unsqueeze(1), x_emb), 1))[:, k]
+  
+  def forward_multihead(self, x, horizon):
+    x = self.embedding(x)
+    balance = self.balance(x)
+    Fr = torch.cat([ode(x, horizon) for ode in self.odenet], 1)
+
+    return balance * Fr, balance, Fr, x
+  
+  def gradient_multihead(self, x_emb, horizon, k):
+    return self.odenet[k].f(torch.cat((horizon.unsqueeze(1), x_emb), 1))

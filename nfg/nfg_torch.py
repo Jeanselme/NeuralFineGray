@@ -106,6 +106,7 @@ class NeuralFineGrayTorch(nn.Module):
     return sr, log_beta, tau_outcome
   
   def gradient(self, outcomes, horizon, e):
+    # Compute gradient for points with observed risk - Faster: only one backpropagation
     return grad([- outcomes[:, r][e == (r + 1)].sum() for r in range(self.risks)], horizon, create_graph = True)[0].clamp_(1e-10)[:, 0]
 
   def forward_single(self, x, horizon):

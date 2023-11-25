@@ -346,9 +346,10 @@ class NFGExperiment(DSMExperiment):
         epochs = hyperparameter.pop('epochs', 1000)
         batch = hyperparameter.pop('batch', 250)
         lr = hyperparameter.pop('learning_rate', 0.001)
+        patience_max = hyperparameter.pop('patience_max', 3)
 
         model = NeuralFineGray(**hyperparameter, cause_specific = cause_specific)
-        model.fit(x, t, e, n_iter = epochs, bs = batch,
+        model.fit(x, t, e, n_iter = epochs, bs = batch, patience_max = patience_max,
                 lr = lr, val_data = (x_val, t_val, e_val))
         
         return model
@@ -368,9 +369,10 @@ class DeSurvExperiment(NFGExperiment):
         epochs = hyperparameter.pop('epochs', 1000)
         batch = hyperparameter.pop('batch', 250)
         lr = hyperparameter.pop('learning_rate', 0.001)
+        patience_max = hyperparameter.pop('patience_max', 3)
 
         model = DeSurv(**hyperparameter)
-        model.fit(x, t, e, n_iter = epochs, bs = batch,
+        model.fit(x, t, e, n_iter = epochs, bs = batch, patience_max = patience_max,
                 lr = lr, val_data = (x_val, t_val, e_val))
         
         return model

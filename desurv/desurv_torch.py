@@ -32,7 +32,7 @@ class CondODENet(nn.Module):
 class DeSurvTorch(nn.Module):
 
   def __init__(self, inputdim, layers = [100, 100, 100], act = 'ReLU', layers_surv = [100],
-               risks = 1, optimizer = "Adam", n = 15, multihead = True):
+               risks = 1, optimizer = "Adam", n = 15, multihead = False):
     super().__init__()
     self.input_dim = inputdim
     self.risks = risks  # Competing risks

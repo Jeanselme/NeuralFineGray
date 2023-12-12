@@ -88,6 +88,6 @@ def process_seer(df):
     imputer = SimpleImputer(strategy='mean')
     df_num = pd.DataFrame(imputer.fit_transform(df[numerical_col].astype(float)), columns = numerical_col, index = df.index)
 
-    return pd.concat([df_cat, df_num, df[['duration', 'event']]], axis = 1)
+    return pd.concat([df_cat, df_num, df_ord, df[['duration', 'event']]], axis = 1)
     
     

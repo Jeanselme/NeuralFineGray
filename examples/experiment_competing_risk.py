@@ -53,12 +53,6 @@ param_grid = {
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e)
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e, cause_specific = True)
 
-# Compared for fixed uncertainty
-param_grid['dropout'] = [0.25]
-NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgfu'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e)
-NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcsfu'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e, cause_specific = True)
-
-
 # Desurv
 param_grid = {
     'epochs': [max_epochs],

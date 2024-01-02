@@ -20,12 +20,12 @@ def total_loss(model, x, t, e):
 def total_loss_cs(model, x, t, e):
   # Go through network
   log_sr, _, tau = model.forward(x, t)
+  log_hr = model.gradient(log_sr, tau, e).log()
 
   # Likelihood error
   error = 0
   for k in range(model.risks):
-    log_hr = model.gradient(log_sr, tau, e == k + 1)
-    error += log_sr[e != k + 1][:, k].sum()
-    error += torch.log(log_hr[e == k + 1]).sum()
+    error -= log_sr[e != (k + 1)][:, k].sum()
+    error -= log_hr[e == (k + 1)].sum()
 
-  return - error / len(x)
+  return error / len(x)

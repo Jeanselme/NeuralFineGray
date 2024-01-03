@@ -32,13 +32,14 @@ class CondODENet(nn.Module):
 class DeSurvTorch(nn.Module):
 
   def __init__(self, inputdim, layers = [100, 100, 100], act = 'ReLU', layers_surv = [100],
-               risks = 1, optimizer = "Adam", n = 15, multihead = False):
+               risks = 1, optimizer = "Adam", n = 15, embedding = False, multihead = True):
+    # No embedding in original paper.
     super().__init__()
     self.input_dim = inputdim
     self.risks = risks  # Competing risks
     self.optimizer = optimizer
 
-    self.embedding = nn.Sequential(*create_representation(inputdim, layers + [inputdim], act))
+    self.embedding = nn.Sequential(*create_representation(inputdim, layers + [inputdim], act)) if embedding else nn.Identity(inputdim)
     self.balance = nn.Sequential(*create_representation(inputdim, layers + [risks], act, last = nn.Softmax(dim = 1))) # Balance between risks
 
     self.odenet = nn.ModuleList(

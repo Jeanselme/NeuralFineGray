@@ -37,6 +37,7 @@ param_grid = {
     'layers' : layers_large,
 }
 DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsm'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e)
+DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsmnc'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e)
 
 # NFG Competing risk
 param_grid = {
@@ -51,6 +52,7 @@ param_grid = {
     'act': ['Tanh'],
 }
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e)
+NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgnc'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e == 1)
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e, cause_specific = True)
 
 # Desurv
@@ -59,11 +61,12 @@ param_grid = {
     'learning_rate' : [1e-3, 1e-4],
     'batch': batch,
 
-    'layers_surv': layers,
-    'layers': layers,
+    'layers_surv': layers_large,
+    'layers': layers_large,
     'act': ['Tanh'],
 }
 DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds'.format(dataset), random_seed = random_seed).train(x, t, e)
+DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsnc'.format(dataset), random_seed = random_seed).train(x, t, e == 1)
 
 # DeepHit Competing risk
 param_grid = {
@@ -75,3 +78,4 @@ param_grid = {
     'shared' : layers
 }
 DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dh'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e)
+DeepHitExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dhnc'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e == 1)

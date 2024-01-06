@@ -37,7 +37,7 @@ param_grid = {
     'layers' : layers_large,
 }
 DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsm'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e)
-DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsmnc'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e)
+DSMExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsmnc'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e == 1)
 
 # NFG Competing risk
 param_grid = {

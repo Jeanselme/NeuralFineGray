@@ -66,8 +66,8 @@ param_grid = {
     'layers': layers,
     'act': ['Tanh'],
 }
-DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds'.format(dataset), random_seed = random_seed).train(x, t, e)
-DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsnc'.format(dataset), random_seed = random_seed).train(x, t, e == 1)
+DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_ds'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e)
+DeSurvExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_dsnc'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e == 1)
 
 # DeepHit Competing risk
 param_grid = {

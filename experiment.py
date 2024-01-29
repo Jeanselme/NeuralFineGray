@@ -140,6 +140,7 @@ class Experiment():
         self.times = np.linspace(t.min(), t.max(), self.times) if isinstance(self.times, int) else self.times
         self.scaler = StandardScaler()
         x = self.scaler.fit_transform(x)
+        e = e.astype(int)
 
         self.risks = np.unique(e[e > 0])
         self.fold_assignment = pd.Series(np.nan, index = range(len(x)))
@@ -322,7 +323,7 @@ class DeepHitExperiment(Experiment):
             survival = 1 - model.predict_cif(x.astype('float32'))[r - 1]
 
         # Interpolate at the point of evaluation
-        survival = pd.DataFrame(survival, columns = index, index = self.eval_times)
+        survival = pd.DataFrame(survival, columns = index, index = model.duration_index)
         predictions = pd.DataFrame(np.nan, columns = index, index = self.times)
         survival = pd.concat([survival, predictions]).sort_index(kind = 'stable').bfill().ffill()
         survival = survival[~survival.index.duplicated(keep='first')]

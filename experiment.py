@@ -1,5 +1,5 @@
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import StratifiedKFold, ShuffleSplit, ParameterSampler, train_test_split
+from sklearn.model_selection import GroupKFold, StratifiedKFold, ShuffleSplit, ParameterSampler, train_test_split
 import pandas as pd
 import numpy as np
 import pickle
@@ -144,7 +144,11 @@ class Experiment():
 
         self.risks = np.unique(e[e > 0])
         self.fold_assignment = pd.Series(np.nan, index = range(len(x)))
-        if self.k == 1:
+        groups = None
+        if isinstance(self.k, list):
+            kf = GroupKFold(n_splits = 5)
+            groups = self.k
+        elif self.k == 1:
             kf = ShuffleSplit(n_splits = self.k, random_state = self.random_seed, test_size = 0.2)
         else:
             kf = StratifiedKFold(n_splits = self.k, random_state = self.random_seed, shuffle = True)
@@ -152,7 +156,7 @@ class Experiment():
         # First initialization
         if self.best_nll is None:
             self.best_nll = np.inf
-        for i, (train_index, test_index) in enumerate(kf.split(x, e)):
+        for i, (train_index, test_index) in enumerate(kf.split(x, e, groups = groups)):
             self.fold_assignment[test_index] = i
             if i < self.fold: continue # When reload: start last point
             if not(self.all_fold is None) and (self.all_fold != i): continue

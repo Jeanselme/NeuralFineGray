@@ -1,5 +1,5 @@
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import LeaveOneGroupOut, StratifiedKFold, ShuffleSplit, ParameterSampler, train_test_split
+from sklearn.model_selection import GroupKFold, StratifiedKFold, ShuffleSplit, ParameterSampler, train_test_split
 import pandas as pd
 import numpy as np
 import pickle
@@ -146,7 +146,7 @@ class Experiment():
         self.fold_assignment = pd.Series(np.nan, index = range(len(x)))
         groups = None
         if isinstance(self.k, list):
-            kf = LeaveOneGroupOut()
+            kf = GroupKFold()
             groups = self.k
         elif self.k == 1:
             kf = ShuffleSplit(n_splits = self.k, random_state = self.random_seed, test_size = 0.2)

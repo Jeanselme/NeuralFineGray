@@ -55,6 +55,9 @@ NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfg'.f
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgnc'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e == 1)
 NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgcs'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e, cause_specific = True)
 
+param_grid['multihead'] = [False]
+NFGExperiment.create(param_grid, n_iter = grid_search, path = 'Results/{}_nfgmono'.format(dataset), random_seed = random_seed, fold = fold).train(x, t, e)
+
 # Desurv
 param_grid = {
     'epochs': [max_epochs],

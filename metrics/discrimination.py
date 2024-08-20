@@ -80,18 +80,21 @@ def truncated_concordance_td(e_test, t_test, risk_predicted_test, times, t, km =
     if tot_event == 0:
         return np.nan, km
     
-    after = np.tile(t_test,(tot_event, 1)) > t_test[event][:, None] # Consider all event after
-    before = (np.tile(t_test,(tot_event, 1)) <= t_test[event][:, None]) & np.tile((e_test != competing_risk) & (e_test != 0), (tot_event, 1))# Account for competing risk prior to t
-    at_risk = np.tile(risk_predicted_test[:, index],(tot_event, 1)) < (risk_predicted_test[event][:, index][:, None])
-    ties = np.abs(np.tile(risk_predicted_test[:, index],(tot_event, 1)) - risk_predicted_test[event][:, index][:, None]) <= tied_tol # Account for ties
-    
-    at_risk = at_risk.astype(float)
-    at_risk[ties] = 0.5
-
     if km is not None:
-        weights_event = np.tile(np.clip(km.survival_function_at_times(t_test[event]), epsilon, None), (len(e_test), 1)).T
-        after = after.astype(float) / (weights_event ** 2)
-        before = before.astype(float) / (weights_event * np.tile(np.clip(km.survival_function_at_times(t_test), epsilon, None), (tot_event, 1)))
+        weights_event = np.clip(km.survival_function_at_times(t_test), epsilon, None)
     
-    concordant = (after + before) * at_risk
-    return concordant.sum() / (after + before).sum(), km
+    nominator, discriminator = 0, 0
+    for t_i, risk_predicted_i, w_i in zip(t_test[event], risk_predicted_test[event][:, index], weights_event[event]):
+        after = t_test > t_i # Consider all event after
+        before = (t_test <= t_i) & (e_test != competing_risk) & (e_test != 0) # Account for competing risk prior to t
+        at_risk = risk_predicted_test[:, index] < risk_predicted_i
+        at_risk = at_risk.astype(float)
+        at_risk[np.abs(risk_predicted_test[:, index] - risk_predicted_i) <= tied_tol] = 0.5
+
+        if km is not None:
+            after = after.astype(float) / (w_i ** 2)
+            before = before.astype(float) / (w_i * weights_event)
+        
+        nominator += ((after + before) * at_risk).sum()
+        discriminator += (after + before).sum()
+    return nominator / discriminator, km

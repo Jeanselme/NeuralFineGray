@@ -6,7 +6,7 @@ from .utils import estimate_ipcw
 
 epsilon = 1e-4
 
-def brier_score(e_test, t_test, risk_predicted_test, times, t, km = None, competing_risk = 1):
+def brier_score(e_test, t_test, risk_predicted_test, times, t, km = None, risk = 1):
     """
         Compute the corrected brier score for a given competing risk
         "Quantifying the predictive accuracty of time-to-event modes in the presence of competing risks" by Schoop et al.
@@ -18,12 +18,12 @@ def brier_score(e_test, t_test, risk_predicted_test, times, t, km = None, compet
             times (array k): Times used for evaluating predictions
             t (float): Time at which to evaluate the brier score
             km (, optional): Kaplan Meier estimate or data to estimate censoring distribution. Defaults to None.
-            competing_risk (int, optional): Competing risk for which to estimate calibration. Defaults to 1.
+            risk (int, optional): Competing risk for which to estimate calibration. Defaults to 1.
 
         Returns:
             float: Brier score for the considered competing risk evaluated at time t.
     """
-    truth = (e_test == competing_risk) & (t_test <= t)
+    truth = (e_test == risk) & (t_test <= t)
     index = np.argmin(np.abs(times - t))
     km = estimate_ipcw(km)
 
@@ -39,14 +39,14 @@ def brier_score(e_test, t_test, risk_predicted_test, times, t, km = None, compet
 
     return (weights * (truth - risk_predicted_test[:, index]) ** 2).mean(), km
 
-def integrated_brier_score(e_test, t_test, risk_predicted_test, times, t_eval = None, km = None, competing_risk = 1):
+def integrated_brier_score(e_test, t_test, risk_predicted_test, times, t_eval = None, km = None, risk = 1):
     """
         Integrated Brier score for competing risks
         Same as previous function but integrated over time, integrated at t_eval if given
     """
     km = estimate_ipcw(km)
     t_eval = times if t_eval is None else t_eval
-    brier_scores = [brier_score(e_test, t_test, risk_predicted_test, times, t, km, competing_risk)[0] for t in t_eval]
+    brier_scores = [brier_score(e_test, t_test, risk_predicted_test, times, t, km, risk)[0] for t in t_eval]
     t_eval, brier_scores = t_eval[~np.isnan(brier_scores)], np.array(brier_scores)[~np.isnan(brier_scores)]
 
     if t_eval.shape[0] < 2:

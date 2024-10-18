@@ -5,7 +5,7 @@ from .utils import estimate_ipcw
 
 epsilon = 1e-4
 
-def auc_td(e_test, t_test, risk_predicted_test, times, t, km = None, competing_risk = 1):
+def auc_td(e_test, t_test, risk_predicted_test, times, t, km = None, risk = 1):
     """
         Calculate the time dependent AUC for competing risks.
         From the paper "Estimating and comparing time-dependent 
@@ -17,7 +17,7 @@ def auc_td(e_test, t_test, risk_predicted_test, times, t, km = None, competing_r
     index = np.argmin(np.abs(times - t)) # Find horizon closest to time to eval
     km = estimate_ipcw(km)
 
-    event = ((e_test == competing_risk) & (t_test <= t))
+    event = ((e_test == risk) & (t_test <= t))
 
     if event.sum() == 0:
         return np.nan, km
@@ -36,7 +36,7 @@ def auc_td(e_test, t_test, risk_predicted_test, times, t, km = None, competing_r
         nominator_after, denominator_after = 0, 0
         
     # Compute impact of competing risk before = number of event with smaller proba weighted
-    before = (t_test <= t) & (e_test != competing_risk) & (e_test != 0) # Account for competing risk prior to t
+    before = (t_test <= t) & (e_test != risk) & (e_test != 0) # Account for competing risk prior to t
     if before.sum() > 0:
         before_sort = np.argsort(risk_predicted_test[before][:, index]) # Sort by risk to only have to find index to have total number
 
@@ -65,7 +65,7 @@ def cumulative_dynamic_auc(e_test, t_test, risk_predicted_test, times, t_eval = 
 
     return np.trapz(aucs, t_eval) / (t_eval[-1] - t_eval[0]), km
 
-def truncated_concordance_td(e_test, t_test, risk_predicted_test, times, t, km = None, competing_risk = 1, tied_tol = 1e-8):
+def truncated_concordance_td(e_test, t_test, risk_predicted_test, times, t, km = None, risk = 1, tied_tol = 1e-8):
     """
         Compute the truncated concordance_td (no reweighting)
 
@@ -74,7 +74,7 @@ def truncated_concordance_td(e_test, t_test, risk_predicted_test, times, t, km =
     index = np.argmin(np.abs(times - t))
     km = estimate_ipcw(km)
 
-    event = ((e_test == competing_risk) & (t_test <= t))
+    event = ((e_test == risk) & (t_test <= t))
     tot_event = event.sum()
 
     if tot_event == 0:
@@ -86,7 +86,7 @@ def truncated_concordance_td(e_test, t_test, risk_predicted_test, times, t, km =
     nominator, discriminator = 0, 0
     for t_i, risk_predicted_i, w_i in zip(t_test[event], risk_predicted_test[event][:, index], weights_event[event]):
         after = t_test > t_i # Consider all event after
-        before = (t_test <= t_i) & (e_test != competing_risk) & (e_test != 0) # Account for competing risk prior to t
+        before = (t_test <= t_i) & (e_test != risk) & (e_test != 0) # Account for competing risk prior to t
         at_risk = risk_predicted_test[:, index] < risk_predicted_i
         at_risk = at_risk.astype(float)
         at_risk[np.abs(risk_predicted_test[:, index] - risk_predicted_i) <= tied_tol] = 0.5

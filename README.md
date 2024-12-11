@@ -16,7 +16,6 @@ model.fit(x, t, e)
 model.predict_risk(x, risk = 1)
 ```
 With `x`, the covariates, `t`, the event times and `e`, the cause of end of follow up (0 is censoring). 
-It is critical to normalise `t` to range in (0, 1), by dividing by the maximum time. Similarly, at evaluation, one must use the normalised time horizons (see `examples/` for a detailed application)
 
 A full example with analysis is provided in `examples/Neural Fine Gray on FRAMINGHAM Dataset.ipynb`.
 ## Reproduce paper's results

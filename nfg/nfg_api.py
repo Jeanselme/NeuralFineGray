@@ -23,6 +23,12 @@ class NeuralFineGray(DSMBase):
     if self.cuda > 0:
       model = model.cuda()
     return model
+  
+  def _normalise(self, time, save = False):
+    time = time + 1 # Do not want event at time 0
+    if save: 
+      self.max_time = time.max()
+    return time / self.max_time # Normalise time between 0 and 1
 
   def fit(self, x, t, e, vsize = 0.15, val_data = None,
           optimizer = "Adam", random_state = 100, **args):
@@ -30,6 +36,9 @@ class NeuralFineGray(DSMBase):
                                                    vsize, val_data,
                                                    random_state)
     x_train, t_train, e_train, x_val, t_val, e_val = processed_data
+
+    t_train = self._normalise(t_train, save = True)
+    t_val = self._normalise(t_val)
 
     maxrisk = int(np.nanmax(e_train.cpu().numpy()))
     model = self._gen_torch_model(x_train.size(1), optimizer, risks = maxrisk)
@@ -50,6 +59,8 @@ class NeuralFineGray(DSMBase):
                       "before calling `_eval_nll`.")
     processed_data = self._preprocess_training_data(x, t, e, 0, None, 0)
     _, _, _, x_val, t_val, e_val = processed_data
+    t_val = self._normalise(t_val)
+
     if self.cuda == 2:
       x_val, t_val, e_val = x_val.cuda(), t_val.cuda(), e_val.cuda()
 
@@ -63,7 +74,7 @@ class NeuralFineGray(DSMBase):
     if self.fitted:
       scores = []
       for t_ in t:
-        t_ = torch.DoubleTensor([t_] * len(x)).to(x.device)
+        t_ = self._normalise(torch.DoubleTensor([t_] * len(x))).to(x.device)
         log_sr, log_beta, _  = self.torch_model(x, t_)
         beta = 1 if self.cause_specific else log_beta.exp() 
         outcomes = 1 - beta * (1 - torch.exp(log_sr)) # Exp diff => Ignore balance but just the risk of one disease
@@ -94,7 +105,7 @@ class NeuralFineGray(DSMBase):
         (dict, dict): Dictionary of the mean impact on likelihood and normal confidence interval
 
     """
-    global_nll = self.compute_nll(x, t, e)
+    global_nll = self.compute_nll(x, self._normalise(t), e)
     permutation = np.arange(len(x))
     performances = {j: [] for j in range(x.shape[1])}
     for _ in tqdm(range(n)):

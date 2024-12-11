@@ -87,11 +87,15 @@ class Experiment():
     @classmethod
     def merge(cls, hyper_grid = None, n_iter = 100, fold = None, k = 5,
             random_seed = 0, path = 'results', force = False, save = True, delete_log = False):
+        if os.path.isfile(path + '.csv'):
+            return ToyExperiment()
         merged = cls(hyper_grid, n_iter, fold, k, random_seed, path, save, delete_log)
         for i in range(5):
             path_i = path + '_{}.pickle'.format(i)
             if os.path.isfile(path_i):
-                merged.best_model[i] = cls.load(path_i).best_model[i]
+                model = cls.load(path_i)
+                print(model.iter, model.fold)
+                merged.best_model[i] = model.best_model[i]
             else:
                 print('Fold {} has not been computed yet'.format(i))
         merged.fold = 5 # Nothing to run
@@ -335,16 +339,6 @@ class DeepHitExperiment(Experiment):
 
 class NFGExperiment(DSMExperiment):
 
-    def __preprocess__(self, t, save = False):
-        if save:
-            self.max_t = t.max()
-        return t / self.max_t
-
-    def train(self, x, t, e, cause_specific = False):
-        self.times = np.linspace(t.min(), t.max(), self.times) if isinstance(self.times, int) else self.times
-        t_norm = self.__preprocess__(t, True)
-        return super().train(x, t_norm, e, cause_specific)
-
     def _fit_(self, x, t, e, x_val, t_val, e_val, hyperparameter, cause_specific):  
         from nfg import NeuralFineGray
 
@@ -360,11 +354,7 @@ class NFGExperiment(DSMExperiment):
         return model
 
     def _predict_(self, model, x, r, index):
-        return pd.DataFrame(model.predict_survival(x, self.__preprocess__(self.times).tolist(), r if model.torch_model.risks >= r else 1), columns = pd.MultiIndex.from_product([[r], self.times]), index = index)
-
-    def likelihood(self, x, t, e):
-        t_norm = self.__preprocess__(t)
-        return super().likelihood(x, t_norm, e)
+        return pd.DataFrame(model.predict_survival(x, self.times.tolist(), r if model.torch_model.risks >= r else 1), columns = pd.MultiIndex.from_product([[r], self.times]), index = index)
 
 class DeSurvExperiment(NFGExperiment):
 

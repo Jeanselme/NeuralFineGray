@@ -38,6 +38,7 @@ def create_representation_positive(inputdim, layers, dropout = 0):
   prevdim = inputdim
   for hidden in layers:
     modules.append(PositiveLinear(prevdim, hidden, bias = True))
+    modules.append(nn.BatchNorm1d(hidden))
     if dropout > 0:
       modules.append(nn.Dropout(p = dropout))
     modules.append(act)
@@ -61,6 +62,7 @@ def create_representation(inputdim, layers, activation, dropout = 0., last = Non
 
   for hidden in layers:
     modules.append(nn.Linear(prevdim, hidden, bias = True))
+    modules.append(nn.BatchNorm1d(hidden))
     if dropout > 0:
       modules.append(nn.Dropout(p = dropout))
     modules.append(act)

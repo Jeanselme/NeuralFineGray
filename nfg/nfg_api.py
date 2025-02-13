@@ -25,10 +25,12 @@ class NeuralFineGray(DSMBase):
     return model
   
   def _normalise(self, time, save = False):
-    time = time + 1 # Do not want event at time 0
+    # For best performance makes the data uniform between 0 and 1
     if save: 
-      self.max_time = time.max()
-    return time / self.max_time # Normalise time between 0 and 1
+      self.time = time
+    ecdf = lambda x: (np.searchsorted(np.sort(self.time), x, side='right') + 1) / len(self.time)
+    uniform_data = torch.Tensor([ecdf(t) for t in time])
+    return uniform_data + 0.1
 
   def fit(self, x, t, e, vsize = 0.15, val_data = None,
           optimizer = "Adam", random_state = 100, **args):
@@ -92,12 +94,12 @@ class NeuralFineGray(DSMBase):
       Parameters
       ----------
       x: np.ndarray
-          A numpy array of the input features, \( x \).
+          A numpy array of the input features, ( x ).
       t: np.ndarray
-          A numpy array of the event/censoring times, \( t \).
+          A numpy array of the event/censoring times, ( t ).
       e: np.ndarray
-          A numpy array of the event/censoring indicators, \( \delta \).
-          \( \delta = 1 \) means the event took place.
+          A numpy array of the event/censoring indicators, ( delta ).
+          ( delta = 1 ) means the event took place.
       n: int
           Number of permutations used for the computation
 

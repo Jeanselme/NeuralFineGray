@@ -9,11 +9,12 @@ from tqdm import tqdm
 
 class NeuralFineGray(DSMBase):
 
-  def __init__(self, cuda = torch.cuda.is_available(), cause_specific = False, **params):
+  def __init__(self, cuda = torch.cuda.is_available(), cause_specific = False, norm_uniform = True, **params):
     self.params = params
     self.fitted = False
     self.cuda = cuda
     self.cause_specific = cause_specific
+    self.norm_uniform = norm_uniform
     self.loss = losses.total_loss_cs if cause_specific else losses.total_loss
 
   def _gen_torch_model(self, inputdim, optimizer, risks):
@@ -25,10 +26,17 @@ class NeuralFineGray(DSMBase):
     return model
   
   def _normalise(self, time, save = False):
-    time = time + 1 # Do not want event at time 0
-    if save: 
-      self.max_time = time.max()
-    return time / self.max_time # Normalise time between 0 and 1
+    if self.norm_uniform:
+      if save: 
+        self.time = time
+      ecdf = lambda x: (np.searchsorted(np.sort(self.time), x, side='right') + 1) / len(self.time)
+      uniform_data = torch.Tensor([ecdf(t) for t in time])
+      return uniform_data + 1e-5 # Avoid 0
+    else:
+      time = time + 1 # Do not want event at time 0
+      if save: 
+        self.max_time = time.max()
+      return time / self.max_time # Normalise time between 0 and 1
 
   def fit(self, x, t, e, vsize = 0.15, val_data = None,
           optimizer = "Adam", random_state = 100, **args):

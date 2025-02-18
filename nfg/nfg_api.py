@@ -25,12 +25,10 @@ class NeuralFineGray(DSMBase):
     return model
   
   def _normalise(self, time, save = False):
-    # For best performance makes the data uniform between 0 and 1
+    time = time + 1 # Do not want event at time 0
     if save: 
-      self.time = time
-    ecdf = lambda x: (np.searchsorted(np.sort(self.time), x, side='right') + 1) / len(self.time)
-    uniform_data = torch.Tensor([ecdf(t) for t in time])
-    return uniform_data + 0.1
+      self.max_time = time.max()
+    return time / self.max_time # Normalise time between 0 and 1
 
   def fit(self, x, t, e, vsize = 0.15, val_data = None,
           optimizer = "Adam", random_state = 100, **args):

@@ -28,7 +28,7 @@ class NeuralFineGray(DSMBase):
   def _normalise(self, time, save = False):
     if self.norm_uniform:
       if save: 
-        self.time = np.sort(self.time)
+        self.time = np.sort(time)
       ecdf = lambda x: (np.searchsorted(self.time, x, side='right') + 1) / len(self.time)
       uniform_data = torch.Tensor([ecdf(t) for t in time])
       return uniform_data + 1e-5 # Avoid 0

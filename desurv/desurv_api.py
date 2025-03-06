@@ -23,7 +23,7 @@ class DeSurv(NeuralFineGray):
     if self.fitted:
       scores = []
       for t_ in t:
-        t_ = torch.DoubleTensor([t_] * len(x)).to(x.device)
+        t_ = self._normalise(torch.DoubleTensor([t_] * len(x))).to(x.device)
         pred, _, _, _ = self.torch_model(x, t_)
         if risk is None:
           scores.append(1 - pred.sum(1).unsqueeze(1).detach().cpu().numpy())

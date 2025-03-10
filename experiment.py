@@ -366,7 +366,7 @@ class DeSurvExperiment(NFGExperiment):
         lr = hyperparameter.pop('learning_rate', 0.001)
         patience_max = hyperparameter.pop('patience_max', 3)
 
-        model = DeSurv(**hyperparameter)
+        model = DeSurv(**hyperparameter, normalise = "None")
         model.fit(x, t, e, n_iter = epochs, bs = batch, patience_max = patience_max,
                 lr = lr, val_data = (x_val, t_val, e_val))
         

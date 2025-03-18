@@ -18,7 +18,7 @@ def auc_td(e_test, t_test, risk_predicted_test, times, t, km = None, competing_r
     km = estimate_ipcw(km)
 
     event = ((e_test == competing_risk) & (t_test <= t))
-
+    
     if event.sum() == 0:
         return np.nan, km
    
@@ -61,11 +61,12 @@ def cumulative_dynamic_auc(e_test, t_test, risk_predicted_test, times, t_eval = 
     t_eval = times if t_eval is None else t_eval
     aucs = [auc_td(e_test, t_test, risk_predicted_test, times, t, km, competing_risk)[0] for t in t_eval]
     t_eval, aucs = t_eval[~np.isnan(aucs)], np.array(aucs)[~np.isnan(aucs)]
+    weights = km.survival_function_at_times(t_eval).values if km is not None else np.cumsum(np.ones(len(t_eval)))
 
     if t_eval.shape[0] < 2:
         raise ValueError("At least two time points must be given")
 
-    return np.trapz(aucs, t_eval) / (t_eval[-1] - t_eval[0]), km
+    return (aucs * np.diff(weights, prepend = 1)).sum() / (weights[-1] - 1), km
 
 def truncated_concordance_td(e_test, t_test, risk_predicted_test, times, t, km = None, competing_risk = 1, tied_tol = 1e-8):
     """

@@ -28,7 +28,7 @@ def auc_td(e_test, t_test, risk_predicted_test, times, t, km = None, competing_r
         after_sort = np.argsort(risk_predicted_test[after][:, index]) # Sort by risk to only have to find index to have total number
 
         correct_after = np.searchsorted(risk_predicted_test[:, index][after][after_sort], risk_predicted_test[event][:, index]) 
-        weights_after = 1. / np.clip(km.survival_function_at_times(t_test[event]).values * km.survival_function_at_times(t).values[0], epsilon, None) if km is not None else np.array(1)
+        weights_after = 1. / np.clip(km.survival_function_at_times(t_test[event]).values * km.survival_function_at_times(t).values[0], epsilon, None) if km is not None else np.ones(event.sum())
 
         nominator_after = (correct_after * weights_after).sum() # Total number of events with their weights
         denominator_after = after.sum() * weights_after.sum() # Total potential at risk
@@ -62,7 +62,6 @@ def cumulative_dynamic_auc(e_test, t_test, risk_predicted_test, times, t_eval = 
     aucs = [auc_td(e_test, t_test, risk_predicted_test, times, t, km, competing_risk)[0] for t in t_eval]
     t_eval, aucs = t_eval[~np.isnan(aucs)], np.array(aucs)[~np.isnan(aucs)]
     weights = km.survival_function_at_times(t_eval).values if km is not None else np.cumsum(np.ones(len(t_eval)))
-
     if t_eval.shape[0] < 2:
         raise ValueError("At least two time points must be given")
 
@@ -87,7 +86,7 @@ def truncated_concordance_td(e_test, t_test, risk_predicted_test, times, t, km =
         weights_event = np.clip(km.survival_function_at_times(t_test), epsilon, None)
     
     nominator, discriminator = 0, 0
-    for t_i, risk_predicted_i, w_i in zip(t_test[event], risk_predicted_test[event][:, index], weights_event[event]):
+    for i, (t_i, risk_predicted_i) in enumerate(zip(t_test[event], risk_predicted_test[event][:, index])):
         after = t_test > t_i # Consider all event after
         before = (t_test <= t_i) & (e_test != competing_risk) & (e_test != 0) # Account for competing risk prior to t
         at_risk = risk_predicted_test[:, index] < risk_predicted_i
@@ -95,8 +94,8 @@ def truncated_concordance_td(e_test, t_test, risk_predicted_test, times, t, km =
         at_risk[np.abs(risk_predicted_test[:, index] - risk_predicted_i) <= tied_tol] = 0.5
 
         if km is not None:
-            after = after.astype(float) / (w_i ** 2)
-            before = before.astype(float) / (w_i * weights_event)
+            after = after.astype(float) / (weights_event[event][i] ** 2)
+            before = before.astype(float) / (weights_event[event][i] * weights_event)
         
         nominator += ((after + before) * at_risk).sum()
         discriminator += (after + before).sum()

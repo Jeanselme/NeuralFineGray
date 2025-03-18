@@ -18,7 +18,7 @@ def brier_score(e_test, t_test, risk_predicted_test, times, t, km = None, compet
             times (array k): Times used for evaluating predictions
             t (float): Time at which to evaluate the brier score
             km (, optional): Kaplan Meier estimate or data to estimate censoring distribution. Defaults to None.
-            risk (int, optional): Competing risk for which to estimate calibration. Defaults to 1.
+            competing_risk (int, optional): Competing risk for which to estimate calibration. Defaults to 1.
 
         Returns:
             float: Brier score for the considered competing risk evaluated at time t.
@@ -31,7 +31,7 @@ def brier_score(e_test, t_test, risk_predicted_test, times, t, km = None, compet
         return np.nan, km
 
     if km is None:
-        return ((truth - risk_predicted_test[:, index]) ** 2).mean(), 
+        return ((truth - risk_predicted_test[:, index]) ** 2).mean(), km
     
     weights = np.zeros_like(e_test, dtype = float)
     weights[(t_test <= t) & (e_test != 0)] = 1. / np.clip(km.survival_function_at_times(t_test[(t_test <= t) & (e_test != 0)]), epsilon, None)

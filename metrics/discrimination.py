@@ -83,7 +83,7 @@ def truncated_concordance_td(e_test, t_test, risk_predicted_test, times, t, km =
         return np.nan, km
     
     if km is not None:
-        weights_event = np.clip(km.survival_function_at_times(t_test), epsilon, None)
+        weights_event = np.clip(km.survival_function_at_times(t_test), epsilon, None).values
     
     nominator, discriminator = 0, 0
     for i, (t_i, risk_predicted_i) in enumerate(zip(t_test[event], risk_predicted_test[event][:, index])):

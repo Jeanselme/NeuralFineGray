@@ -9,7 +9,7 @@ class CondODENet(nn.Module):
         super().__init__()
         self.output_dim = output_dim
 
-        self.f = nn.Sequential(*create_representation(cov_dim + 1, layers + [output_dim], act, last = nn.Softplus()))
+        self.f = nn.Sequential(*create_representation(cov_dim + 1, layers + [output_dim], act, norm = False, last = nn.Softplus()))
         self.n = n
 
         u_n, w_n = np.polynomial.legendre.leggauss(n)

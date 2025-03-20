@@ -7,6 +7,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 
+
 class NeuralFineGray(DSMBase):
 
   def __init__(self, cuda = torch.cuda.is_available(), cause_specific = False, normalise = "None", **params):

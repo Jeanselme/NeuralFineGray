@@ -9,6 +9,7 @@ def total_loss(model, x, t, e, eps = 1e-10):
   error = - torch.log(1 - pred[e == 0].sum(dim = 1) + eps).sum()
   for k in range(model.risks):
     ids = (e == (k + 1))
+    if ids.sum() < 2: continue
     derivative = model.gradient(x[ids], t[ids], k)
     error -= (torch.log(1 - ode[ids][:, k] ** 2 + eps) 
             + torch.log(derivative + eps) 

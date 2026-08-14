@@ -52,11 +52,11 @@ class Experiment():
         self.path = path
         self.tosave = save
         self.delete_log = delete_log
-        self.running_time = 0
+        self.running_time = []
 
     @classmethod
     def create(cls, hyper_grid = None, n_iter = 100, fold = None, k = 5,
-                random_seed = 0, path = 'results', force = False, save = True, delete_log = False):
+                random_seed = 0, path = 'results', force = False, save = True, delete_log = False, times = 100):
         if not(force):
             path = path if fold is None else path + '_{}'.format(fold)
             if os.path.isfile(path + '.csv'):
@@ -71,7 +71,7 @@ class Experiment():
                     #os.remove(path + '.pickle')
                     return
                 
-        return cls(hyper_grid, n_iter, fold, k, random_seed, path, save, delete_log)
+        return cls(hyper_grid, n_iter, fold, k, random_seed, path, save, delete_log, times)
 
     @classmethod
     def load(cls, path):
@@ -183,7 +183,7 @@ class Experiment():
 
                 start_time = time.process_time()
                 model = self._fit_(x_train, t_train, e_train, x_val, t_val, e_val, hyper.copy(), cause_specific = cause_specific)
-                self.running_time += time.process_time() - start_time
+                self.running_time.append(time.process_time() - start_time)
                 
                 nll = self._nll_(model, x_dev, t_dev, e_dev, e_train, t_train)
                 if nll < self.best_nll:
@@ -201,7 +201,8 @@ class Experiment():
             return self.save_results(x)
         
     def get_running_time(self):
-        return self.running_time / ((self.fold - 1) * len(self.hyper_grid) + self.iter)
+        total_comb = len(self.running_time) // self.k
+        return [np.median(self.running_time[fold * total_comb: (fold + 1) * total_comb]) for fold in range(self.k)]
 
     def _fit_(self, *params):
         raise NotImplementedError()
@@ -370,7 +371,7 @@ class DeSurvExperiment(NFGExperiment):
         lr = hyperparameter.pop('learning_rate', 0.001)
         patience_max = hyperparameter.pop('patience_max', 3)
 
-        model = DeSurv(**hyperparameter, normalise = "minmax")
+        model = DeSurv(**hyperparameter)
         model.fit(x, t, e, n_iter = epochs, bs = batch, patience_max = patience_max,
                 lr = lr, val_data = (x_val, t_val, e_val))
         

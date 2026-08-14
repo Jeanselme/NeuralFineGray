@@ -1,5 +1,7 @@
 # This script extracts the different fold to then use the fine gray R script
 import sys
+sys.path.append('NeuralFineGray/')
+sys.path.append('NeuralFineGray/DeepSurvivalMachines/')
 from nfg import datasets
 from experiment import *
 
@@ -14,7 +16,7 @@ if dataset == "SEER":
     x = np.delete(x, 8, 1) # Non invertible otherwise
 
 ## Save data for R 
-kf = StratifiedKFold(random_state = random_seed, shuffle = True)
+kf = StratifiedKFold(n_splits = 5, random_state = random_seed, shuffle = True)
 data = pd.DataFrame(x).add_prefix('feature') # Do not save names to match R
 
 for i, (train_index, test_index) in enumerate(kf.split(x, e)):

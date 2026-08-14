@@ -68,4 +68,4 @@ class DeSurvTorch(nn.Module):
     return balance * Fr, balance, Fr, x
   
   def gradient_multihead(self, x_emb, horizon, k):
-    return self.odenet[k].f(torch.cat((horizon.unsqueeze(1), x_emb), 1))
+    return self.odenet[k].f(torch.cat((horizon.unsqueeze(1), x_emb), 1)).squeeze(-1)

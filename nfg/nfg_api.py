@@ -37,7 +37,7 @@ class NeuralFineGray(DSMBase):
       time = time + 1 # Do not want event at time 0
       if save: 
         self.max_time = time.max()
-      return time / self.max_time # Normalise time between 0 and 1
+      return time / self.max_time.to(time.device) # Normalise time between 0 and 1
     else:
       return time
 

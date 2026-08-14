@@ -1,5 +1,5 @@
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import GroupKFold, StratifiedKFold, ShuffleSplit, ParameterSampler, train_test_split
+from sklearn.model_selection import GroupKFold, KFold, ShuffleSplit, ParameterSampler, train_test_split
 import pandas as pd
 import numpy as np
 import pickle
@@ -66,16 +66,17 @@ class Experiment():
                 try:
                     return cls.load(path+ '.pickle')
                 except Exception as e:
-                    print('ERROR: Reinitalizing object')
-                    os.remove(path + '.pickle')
-                    pass
+                    raise e
+                    #print('ERROR: Reinitalizing object')
+                    #os.remove(path + '.pickle')
+                    return
                 
         return cls(hyper_grid, n_iter, fold, k, random_seed, path, save, delete_log)
 
     @classmethod
     def load(cls, path):
         file = open(path, 'rb')
-        if torch.cuda.is_available():
+        if torch.cuda.is_available() or torch.mps.is_available():
             return pickle.load(file)
         else:
             se = CPU_Unpickler(file).load()
@@ -155,12 +156,12 @@ class Experiment():
         elif self.k == 1:
             kf = ShuffleSplit(n_splits = self.k, random_state = self.random_seed, test_size = 0.2)
         else:
-            kf = StratifiedKFold(n_splits = self.k, random_state = self.random_seed, shuffle = True)
+            kf = KFold(n_splits = self.k, random_state = self.random_seed, shuffle = True)
 
         # First initialization
         if self.best_nll is None:
             self.best_nll = np.inf
-        for i, (train_index, test_index) in enumerate(kf.split(x, e, groups = groups)):
+        for i, (train_index, test_index) in enumerate(kf.split(x, e == 1, groups = groups)):
             self.fold_assignment[test_index] = i
             if i < self.fold: continue # When reload: start last point
             if not(self.all_fold is None) and (self.all_fold != i): continue
@@ -198,6 +199,9 @@ class Experiment():
 
         if self.all_fold is None:
             return self.save_results(x)
+        
+    def get_running_time(self):
+        return self.running_time / ((self.fold - 1) * len(self.hyper_grid) + self.iter)
 
     def _fit_(self, *params):
         raise NotImplementedError()

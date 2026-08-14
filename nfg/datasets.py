@@ -28,7 +28,12 @@ def load_dataset(dataset='SUPPORT', path = './', normalize = True, **kwargs):
         df = df.drop(columns = ['true_time', 'true_label']).rename(columns = {'label': 'event', 'time': 'duration'})
         df['duration'] += EPS # Avoid problem of the minimum value 0
     else:
-        return load_dsm(dataset, normalize = normalize, **kwargs)
+        x, t, e, covariates = load_dsm(dataset, normalize = normalize, **kwargs)
+        if dataset == "FRAMINGHAM":
+            # CVD should be of interest
+            e *= 2
+            e[e == 4] = 1
+        return x, t, e, covariates
 
     covariates = df.drop(['duration', 'event'], axis = 'columns')
     return StandardScaler().fit_transform(covariates.values).astype(float) if normalize else covariates.values.astype(float),\
